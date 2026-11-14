@@ -437,15 +437,27 @@ class SpherexApp {
   async loadPipelineData() {
     this.stopPlayback();
     const statusEl = document.getElementById('systemStatusText');
-    if (statusEl) statusEl.textContent = 'EXECUTING PIPELINE...';
+    const message = document.getElementById('viewerMessage');
+    if (message) {
+      message.hidden = false;
+      message.querySelector('strong').textContent = 'Loading observations';
+      message.querySelector('span').textContent = 'Preparing the selected field and detector.';
+    }
+    if (statusEl) statusEl.textContent = 'Loading observations';
 
     // Standardized endpoint conforming to Section 9.2 with real FITS and FOV support
     const url = `/api/frames?q=${encodeURIComponent(this.state.target)}&det=${this.state.detector}&mode=${this.state.mode}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
     
     try {
       const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Observation request failed (${resp.status})`);
       const data = await resp.json();
+      if (!data.frames?.length) throw new Error('No frames returned');
       this.pipelineData = data;
+      if (this.state.sourceMode === 'auto') {
+        document.getElementById('sourceRealBtn').classList.toggle('active', data.is_real_data);
+        document.getElementById('sourceSimBtn').classList.toggle('active', !data.is_real_data);
+      }
       this.state.totalFrames = data.frames ? data.frames.length : 0;
       this.state.currentFrameIdx = 0;
 
@@ -487,20 +499,26 @@ class SpherexApp {
 
       // Render first frame & start loop
       this.renderFrame(0);
+      if (message) message.hidden = true;
       if (this.state.isPlaying) {
         this.startPlayback();
       }
 
       if (statusEl) {
         if (data.is_real_data) {
-          statusEl.textContent = 'REAL FITS • VERIFIED';
+          statusEl.textContent = 'Archive FITS';
         } else {
-          statusEl.textContent = 'DR1 / QR3 • ONLINE';
+          statusEl.textContent = 'Simulation';
         }
       }
     } catch (err) {
       console.error('Failed to load pipeline data:', err);
-      if (statusEl) statusEl.textContent = 'PIPELINE ERROR';
+      if (statusEl) statusEl.textContent = 'Observations unavailable';
+      if (message) {
+        message.hidden = false;
+        message.querySelector('strong').textContent = 'Could not load observations';
+        message.querySelector('span').textContent = 'Select another target or try the simulation source.';
+      }
     }
   }
 
@@ -660,11 +678,15 @@ class SpherexApp {
     if (elCoord) elCoord.textContent = `RA ${target.ra_deg.toFixed(4)}°, Dec ${target.dec_deg.toFixed(4)}°`;
     
     const elPm = document.getElementById('astFittedPm');
-    if (elPm) elPm.textContent = `${astro.fitted_pm.total_pm_arcsec_yr}"/yr (${astro.fitted_pm.total_pm_mas_yr} mas/yr)`;
+    if (elPm) elPm.textContent = astro.fitted_pm
+      ? `${astro.fitted_pm.fitted_total_pm_arcsec_yr}"/yr (${astro.fitted_pm.fitted_total_pm_mas_yr} mas/yr)`
+      : `${astro.proper_motion_total_arcsec_yr}"/yr (catalog)`;
     const elRes = document.getElementById('astGaiaResidual');
-    if (elRes) elRes.textContent = `${astro.residuals.total_residual_mas_yr} mas/yr`;
+    if (elRes) elRes.textContent = astro.residuals
+      ? `${astro.residuals.total_residual_mas_yr} mas/yr`
+      : 'Not measured';
     const elVer = document.getElementById('astVerdict');
-    if (elVer) elVer.textContent = astro.validation_verdict;
+    if (elVer) elVer.textContent = astro.validation_verdict || 'Archive images loaded. Independent astrometric fitting is not available for this source.';
   }
 
   updateFlickerAudit(audit) {
@@ -676,7 +698,9 @@ class SpherexApp {
     const supF = document.getElementById('flickerSuppressionVal');
     if (supF) supF.textContent = `${audit.overall_flicker_suppression_pct}%`;
     const nullF = document.getElementById('nullTestVal');
-    if (nullF) nullF.textContent = `Chi2 = ${audit.null_test_chi2_nu} (Noise Null)`;
+    if (nullF) nullF.textContent = audit.null_test_chi2_nu == null
+      ? 'Not provided'
+      : `Chi2 = ${audit.null_test_chi2_nu}`;
 
     this.auditChart.setData(audit);
   }

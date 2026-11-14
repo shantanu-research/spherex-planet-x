@@ -29,14 +29,22 @@ class AuditChart {
   }
 
   render() {
-    if (!this.data || !this.data.stars) return;
-
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
     ctx.clearRect(0, 0, w, h);
+    if (!this.data?.stars?.length) {
+      ctx.fillStyle = '#d0d7d9';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Per-star audit unavailable', w / 2, h / 2 - 8);
+      ctx.fillStyle = '#a1adb3';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Select Simulation to inspect reference-star scatter.', w / 2, h / 2 + 18, w - 32);
+      return;
+    }
 
-    const margin = { left: 45, right: 20, top: 30, bottom: 40 };
+    const margin = { left: 40, right: 16, top: 58, bottom: 40 };
     const pw = w - margin.left - margin.right;
     const ph = h - margin.top - margin.bottom;
 
@@ -58,8 +66,8 @@ class AuditChart {
       ctx.lineTo(margin.left + pw, gy);
       ctx.stroke();
 
-      ctx.fillStyle = '#8e8e99';
-      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#a1adb3';
+      ctx.font = '11px "JetBrains Mono", monospace';
       ctx.textAlign = 'right';
       ctx.fillText(`${s}%`, margin.left - 6, gy + 3);
     }
@@ -79,7 +87,7 @@ class AuditChart {
     ctx.textAlign = 'right';
     ctx.fillText('2% Science Threshold', margin.left + pw, y2Pct - 4);
 
-    // 3. Bars for each star (Raw Monochrome vs Band-Balanced Vibranium Purple)
+    // 3. Bars for each star (Raw Monochrome vs Band-balanced scatter)
     const groupWidth = pw / n;
     const barWidth = Math.max(3, (groupWidth - 8) / 2);
 
@@ -92,29 +100,29 @@ class AuditChart {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.fillRect(gx, margin.top + ph - rH, barWidth, rH);
 
-      // Band-Balanced Bar (Black Panther Royal Purple)
+      // Band-Balanced Bar (Band-balanced scatter)
       const bH = Math.max(2, (st.balanced_scatter_pct / maxScatter) * ph);
-      ctx.fillStyle = '#a855f7';
+      ctx.fillStyle = '#a2d4c3';
       ctx.fillRect(gx + barWidth + 1, margin.top + ph - bH, barWidth, bH);
 
       // Star Index Label
-      ctx.fillStyle = '#8e8e99';
-      ctx.font = '8px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#a1adb3';
+      ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`S${st.star_index}`, gx + barWidth, margin.top + ph + 14);
+      if (groupWidth >= 20 || i % 2 === 0) ctx.fillText(`S${st.star_index}`, gx + barWidth, margin.top + ph + 14);
     }
 
     // Legend
     ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
     ctx.fillRect(margin.left + 10, 8, 12, 10);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.font = '11px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Raw Frames (~${this.data.mean_raw_flicker_pct}% scatter)`, margin.left + 26, 16);
+    ctx.fillText(`Raw (${this.data.mean_raw_flicker_pct}%)`, margin.left + 26, 16);
 
-    ctx.fillStyle = '#a855f7';
-    ctx.fillRect(margin.left + 220, 8, 12, 10);
+    ctx.fillStyle = '#a2d4c3';
+    ctx.fillRect(margin.left + 10, 30, 12, 10);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`Band-Balanced (<${this.data.mean_balanced_flicker_pct}% scatter)`, margin.left + 236, 16);
+    ctx.fillText(`Band-balanced (${this.data.mean_balanced_flicker_pct}%)`, margin.left + 26, 38);
   }
 }

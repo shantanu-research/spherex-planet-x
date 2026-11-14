@@ -152,7 +152,7 @@ class SpectrumChart {
       ctx.lineTo(margin.left + pw, gy);
       ctx.stroke();
 
-      ctx.fillStyle = "#8e8e99";
+      ctx.fillStyle = "#a1adb3";
       ctx.font = '9px "JetBrains Mono", monospace';
       ctx.textAlign = "right";
       ctx.fillText(fluxVal.toFixed(1), margin.left - 8, gy + 3);
@@ -167,16 +167,16 @@ class SpectrumChart {
       ctx.lineTo(gx, margin.top + ph);
       ctx.stroke();
 
-      ctx.fillStyle = "#8e8e99";
+      ctx.fillStyle = "#a1adb3";
       ctx.fillText(`${lam.toFixed(1)} um`, gx, margin.top + ph + 18);
     }
 
-    // 4. Draw Calibrated Flux Spectrum Curve (Black Panther Vibranium Purple)
+    // 4. Draw Calibrated Flux Spectrum Curve (Calibrated flux)
     ctx.save();
-    ctx.shadowColor = "#9333ea";
-    ctx.shadowBlur = 8;
+    ctx.shadowColor = "#a2d4c3";
+    ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.strokeStyle = "#a855f7";
+    ctx.strokeStyle = "#a2d4c3";
     ctx.lineWidth = 2;
     for (let i = 0; i < pts.length; i++) {
       const x = xMap(pts[i].wavelength_um);
@@ -194,7 +194,7 @@ class SpectrumChart {
       const yErrTop = yMap(p.flux_mjy + p.flux_err_mjy);
       const yErrBot = yMap(Math.max(0, p.flux_mjy - p.flux_err_mjy));
 
-      ctx.strokeStyle = "rgba(168, 85, 247, 0.4)";
+      ctx.strokeStyle = "rgba(162, 212, 195, 0.4)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x, yErrTop);
@@ -213,7 +213,7 @@ class SpectrumChart {
       const hx = xMap(hp.wavelength_um);
       const hy = yMap(hp.flux_mjy);
 
-      ctx.strokeStyle = "#c084fc";
+      ctx.strokeStyle = "#a2d4c3";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(hx, hy, 5, 0, 2 * Math.PI);
@@ -227,12 +227,12 @@ class SpectrumChart {
       const ttY = margin.top + 8;
 
       ctx.fillStyle = "rgba(8, 8, 12, 0.95)";
-      ctx.strokeStyle = "rgba(168, 85, 247, 0.5)";
+      ctx.strokeStyle = "rgba(162, 212, 195, 0.5)";
       ctx.lineWidth = 1;
       ctx.fillRect(ttX, ttY, ttWidth, 36);
       ctx.strokeRect(ttX, ttY, ttWidth, 36);
 
-      ctx.fillStyle = "#c084fc";
+      ctx.fillStyle = "#a2d4c3";
       ctx.textAlign = "left";
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillText(ttText1, ttX + 8, ttY + 14);

@@ -209,7 +209,7 @@ class FlipbookViewer {
 
       // 3. Draw Vertical Wipe Divider Line
       this.ctx.save();
-      this.ctx.strokeStyle = '#a855f7';
+      this.ctx.strokeStyle = '#a2d4c3';
       this.ctx.lineWidth = 2 / this.zoomLevel;
       this.ctx.beginPath();
       this.ctx.moveTo(wipeX, 0);
@@ -219,7 +219,7 @@ class FlipbookViewer {
       // Wipe drag handle
       const handleR = 12 / this.zoomLevel;
       this.ctx.fillStyle = '#09090b';
-      this.ctx.strokeStyle = '#a855f7';
+      this.ctx.strokeStyle = '#a2d4c3';
       this.ctx.beginPath();
       this.ctx.arc(wipeX, cHeight / 2, handleR, 0, Math.PI * 2);
       this.ctx.fill();
@@ -287,7 +287,7 @@ class FlipbookViewer {
         if (f.target_pos_px) {
           const tx = f.target_pos_px[0] * scaleX;
           const ty = f.target_pos_px[1] * scaleY;
-          this.ctx.fillStyle = (f.visit_id === this.currentFrame.visit_id) ? '#c084fc' : 'rgba(168, 85, 247, 0.4)';
+          this.ctx.fillStyle = (f.visit_id === this.currentFrame.visit_id) ? '#a2d4c3' : 'rgba(162, 212, 195, 0.4)';
           this.ctx.beginPath();
           this.ctx.arc(tx, ty, 3 / this.zoomLevel, 0, 2 * Math.PI);
           this.ctx.fill();
@@ -296,16 +296,16 @@ class FlipbookViewer {
       this.ctx.restore();
     }
 
-    // 3. Draw Target Reticle / Marker (Black Panther Vibranium Purple)
+    // 3. Draw Target Reticle / Marker (Calibrated flux)
     if (this.showReticle) {
       const rx = this.reticlePos.x * scaleX;
       const ry = this.reticlePos.y * scaleY;
       
       this.ctx.save();
-      this.ctx.strokeStyle = '#a855f7'; // Vibranium purple
+      this.ctx.strokeStyle = '#a2d4c3'; // Selection accent
       this.ctx.lineWidth = 1.5 / this.zoomLevel;
-      this.ctx.shadowColor = '#9333ea';
-      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#a2d4c3';
+      this.ctx.shadowBlur = 0;
 
       const rRadius = 14 / this.zoomLevel;
       const rArm = 20 / this.zoomLevel;
