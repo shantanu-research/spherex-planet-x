@@ -2,9 +2,10 @@
 Track 2: Data Calibration, Cleaning, Akhilesh's 5-Step Stacking, and Flicker Audit
 """
 
-from .cleaning import clean_frame_data, DEFAULT_MP_FLAGS
+from .cleaning import clean_frame_data, clean_visit_exposures, DEFAULT_MP_FLAGS
 from .band_balancer import (
     perform_band_balanced_stacking,
+    register_shot,
     label_exposure_spectral_channel,
     DETECTOR_SPECS,
     get_channel_wavelength,
@@ -21,8 +22,10 @@ from .differencing import (
 
 __all__ = [
     "clean_frame_data",
+    "clean_visit_exposures",
     "DEFAULT_MP_FLAGS",
     "perform_band_balanced_stacking",
+    "register_shot",
     "label_exposure_spectral_channel",
     "DETECTOR_SPECS",
     "get_channel_wavelength",
