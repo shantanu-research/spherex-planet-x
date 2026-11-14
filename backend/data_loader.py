@@ -536,7 +536,8 @@ class ArchiveTargetCatalog:
         fov_mode: str = "wide",
         blink_mode: str = "spectral",
         stretch_type: str = "asinh",
-        resample_grid: bool = True
+        resample_grid: bool = True,
+        target_radec: Optional[Tuple[float, float]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Loads and processes real FITS frames for the given target.
@@ -650,12 +651,23 @@ class ArchiveTargetCatalog:
                         det_num = d
                         break
 
+            shot_label: Optional[Dict[str, Any]] = None
             if det_num and det_num in SPHEREX_BANDS:
                 binfo = SPHEREX_BANDS[det_num]
                 band_label = binfo["name"]
                 wavelength_um = binfo["center_um"]
                 wavelength_range = binfo["range"]
                 instrument_tag = "SPHEREx Level-2 Cutout"
+                # Track 2 Step 1: the wavelength the target was actually seen at, from the
+                # file's spectral WCS, and its band (needs astropy and the target position)
+                if target_radec is not None:
+                    try:
+                        from backend.track2_calibration.spectral_labels import label_spherex_shot
+                        shot_label = label_spherex_shot(fpath, target_radec[0], target_radec[1])
+                        wavelength_um = shot_label["lambda_at_target"]
+                        band_label = f"{binfo['name']} band {shot_label['band']}"
+                    except Exception as exc:  # no astropy, no WCS-WAVE, not a SPHEREx MEF...
+                        shot_label = {"status": "not_labelled", "reason": str(exc)[:200]}
             elif "W1" in fname_upper:
                 band_label = "WISE W1"
                 wavelength_um = 3.4
@@ -715,6 +727,8 @@ class ArchiveTargetCatalog:
                 "cosmic_rays_masked": int(fits_img.cards.get("CR_MASKED", "0")),
                 "crval": {"ra": fits_img.crval1, "dec": fits_img.crval2}
             }
+            if shot_label is not None:
+                frame_data["shot"] = shot_label
             frames.append(frame_data)
 
         return frames

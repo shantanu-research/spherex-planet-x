@@ -79,6 +79,38 @@ def build_track2_manifest(stack_res: Dict[str, Any], visits: List[Dict[str, Any]
     }
 
 
+def _target_radec(resolved: Dict[str, Any]) -> Optional[Tuple[float, float]]:
+    """Target RA/Dec for labelling real shots: epoch-propagated if available, else catalog."""
+    prop = resolved.get("epoch_propagation") or {}
+    if prop.get("ra_prop_deg") is not None and prop.get("dec_prop_deg") is not None:
+        return float(prop["ra_prop_deg"]), float(prop["dec_prop_deg"])
+    target = resolved.get("target") or {}
+    if target.get("ra_deg") is not None and target.get("dec_deg") is not None:
+        return float(target["ra_deg"]), float(target["dec_deg"])
+    return None
+
+
+def _real_track2_manifest(real_frames: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Step 1 labels of real SPHEREx shots (stacking real files is not implemented yet)."""
+    shots = []
+    for rf in real_frames:
+        label = rf.get("shot")
+        if label is None:
+            continue
+        shots.append({"source_file": rf.get("source_file"), **label})
+    labelled = [s for s in shots if "band" in s]
+    return {
+        "status": "labels_only" if labelled else "not_run",
+        "reason": (
+            "Real SPHEREx shots are labelled with lambda_at_target and band (Step 1); "
+            "band-balanced stacking of real files is not implemented yet."
+            if labelled else
+            "No real SPHEREx shot could be labelled (needs astropy and files with a WCS-WAVE extension)."
+        ),
+        "shots": shots,
+    }
+
+
 def select_matched_band_shots(
     visits: List[Dict[str, Any]], detector: str, band: int
 ) -> List[Optional[Dict[str, Any]]]:
@@ -191,7 +223,8 @@ def execute_pipeline(
             fov_mode=eff_fov_mode,
             blink_mode=eff_blink_mode,
             stretch_type=stretch,
-            resample_grid=True
+            resample_grid=True,
+            target_radec=_target_radec(resolved),
         )
         if real_raw_frames:
             w = real_raw_frames[0]["width"]
@@ -274,6 +307,8 @@ def execute_pipeline(
                     "stats": rf["stats"],
                     "rgb_pixels": rgb_frame
                 })
+                if rf.get("shot") is not None:
+                    rendered_frames[-1]["shot"] = rf["shot"]
 
             # Real archive frames are not band-balanced yet (Track 2 Step 1 needs the
             # wavelength WCS), so there is nothing honest to audit: report "not run".
@@ -321,7 +356,7 @@ def execute_pipeline(
                 "color_mode": eff_color_mode,
                 "process_mode": eff_process_mode,
                 "grid_size": w,
-                "track2": {"status": "not_run", "reason": "Real-archive frames are not band-labelled yet (needs the wavelength WCS, Track 2 Step 1)."},
+                "track2": _real_track2_manifest(real_raw_frames),
                 "pixel_scale_arcsec": pixel_scale,
                 "fov_arcmin": active_fov,
                 "fov_mode": eff_fov_mode,
