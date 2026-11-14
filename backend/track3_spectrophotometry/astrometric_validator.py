@@ -151,3 +151,79 @@ def validate_proper_motion_astrometry(
         "validation_verdict": "PASS: Astrometric motion is verified consistent with Gaia DR3 / CatWISE ground-truth." if consistency_pass else "WARN: Astrometric residual exceeds 800 mas/yr threshold (~0.13 px on native scale).",
         "centroids": centroids
     }
+import numpy as np
+import astropy.units as u
+from astropy.coordinates import SkyCoord, Distance
+from astropy.time import Time
+from astroquery.gaia import Gaia
+
+def query_live_gaia_overlay(ra_deg: float, dec_deg: float, fov_arcmin: float, target_mjd: float, grid_size: int = 64, pixscale_arcsec: float = 6.15):
+    """
+    Queries Gaia DR3 around (ra_deg, dec_deg), propagates stars from J2016.0
+    to target_mjd, and maps them to (pixel_x, pixel_y) on the north-up TAN grid.
+    """
+    Gaia.ROW_LIMIT = 50
+    center = SkyCoord(ra=ra_deg * u.deg, dec=dec_deg * u.deg, frame="icrs")
+    radius = (fov_arcmin / 2.0) * u.arcmin
+
+    job = Gaia.cone_search_async(center, radius=radius)
+    results = job.get_results()
+
+    obs_time = Time(target_mjd, format="mjd")
+    gaia_epoch = Time("J2016.0")
+    half_grid = grid_size / 2.0
+    cos_dec = np.cos(np.radians(dec_deg))
+
+    stars = []
+    for row in results:
+        pm_ra = row["pmra"] * (u.mas / u.yr) if not np.ma.is_masked(row["pmra"]) else 0.0 * (u.mas / u.yr)
+        pm_dec = row["pmdec"] * (u.mas / u.yr) if not np.ma.is_masked(row["pmdec"]) else 0.0 * (u.mas / u.yr)
+        
+        # Avoid ERFA infinite-distance warning when parallax is missing or negative
+        if not np.ma.is_masked(row["parallax"]) and row["parallax"] > 0.1:
+            dist = Distance(parallax=row["parallax"] * u.mas)
+        else:
+            dist = 2000.0 * u.pc
+
+        star = SkyCoord(
+            ra=row["ra"] * u.deg,
+            dec=row["dec"] * u.deg,
+            distance=dist,
+            pm_ra_cosdec=pm_ra,
+            pm_dec=pm_dec,
+            obstime=gaia_epoch,
+        )
+        prop = star.apply_space_motion(new_obstime=obs_time)
+
+        # Convert propagated (RA, Dec) to north-up, east-left TAN grid pixels
+        dra_arcsec = (prop.ra.deg - ra_deg) * 3600.0 * cos_dec
+        ddec_arcsec = (prop.dec.deg - dec_deg) * 3600.0
+        px = half_grid - (dra_arcsec / pixscale_arcsec)   # East is left (-x)
+        py = half_grid + (ddec_arcsec / pixscale_arcsec)  # North is up (+y)
+
+        if 0 <= px < grid_size and 0 <= py < grid_size:
+            stars.append({
+                "source_id": f"Gaia DR3 {row['source_id']}",
+                "ra": round(float(prop.ra.deg), 6),
+                "dec": round(float(prop.dec.deg), 6),
+                "pixel_x": round(float(px), 2),
+                "pixel_y": round(float(py), 2),
+                "pm_ra_mas_yr": round(float(pm_ra.value), 2),
+                "pm_dec_mas_yr": round(float(pm_dec.value), 2),
+                "g_mag": round(float(row["phot_g_mean_mag"]), 2) if not np.ma.is_masked(row["phot_g_mean_mag"]) else None,
+            })
+
+    return stars
+
+if __name__ == "__main__":
+    print("=== Testing Live Gaia DR3 Query & Astrometric Space Motion Propagation ===")
+    test_ra = 269.45208  # Barnard's Star RA
+    test_dec = 4.69339   # Barnard's Star Dec
+    test_mjd = 60810.0   # SPHEREx Survey Epoch (~May 2025)
+    
+    print(f"Center: RA={test_ra} deg, Dec={test_dec} deg, Target MJD={test_mjd}")
+    stars = query_live_gaia_overlay(ra_deg=test_ra, dec_deg=test_dec, fov_arcmin=6.5, target_mjd=test_mjd)
+    print(f"Found {len(stars)} live Gaia DR3 stars within 6.5' field.")
+    for s in stars[:5]:
+        print(f"  * {s['source_id']} | G={s['g_mag']} mag | (px, py)=({s['pixel_x']}, {s['pixel_y']}) | pm=({s['pm_ra_mas_yr']}, {s['pm_dec_mas_yr']}) mas/yr")
+
