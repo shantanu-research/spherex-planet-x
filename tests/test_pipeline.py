@@ -128,6 +128,76 @@ class TestSpherexPipeline(unittest.TestCase):
                 neighbours = sorted(img[y + dy][x + dx] for dy in (-2, 0, 2) for dx in (-2, 0, 2) if dx or dy)
                 self.assertLess(img[y][x] - neighbours[len(neighbours) // 2], 0.5)
 
+    def _visits_keeping_bands(self, bands_per_visit):
+        """Simulated D6 visits with each visit's shots limited to the given bands."""
+        sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=16)
+        visits = sim["visits"][: len(bands_per_visit)]
+        for v, keep in zip(visits, bands_per_visit):
+            v["exposures"] = [
+                e for e in v["exposures"] if label_exposure_spectral_channel("D6", e["wavelength_um"]) in keep
+            ]
+        return visits
+
+    def test_track2_step3_no_union_fallback(self):
+        """Visits with no shared bands are marked not comparable, never silently mixed."""
+        visits = self._visits_keeping_bands([{1, 2, 3}, {10, 11, 12}])
+        res = perform_band_balanced_stacking(visits, "D6")
+        self.assertEqual(res["n_shared_channels"], 0)
+        self.assertFalse(res["comparable"])
+        self.assertIn("NOT COMPARABLE", res["reliability_warning"])
+        self.assertEqual(res["visit_stacks"][0]["bands_used"], [1, 2, 3])
+        self.assertEqual(res["visit_stacks"][1]["bands_used"], [10, 11, 12])
+
+    def test_track2_step3_few_shared_bands_unreliable(self):
+        """Fewer than 10 shared bands: stacks use only shared bands and are flagged unreliable."""
+        visits = self._visits_keeping_bands([set(range(1, 18)), set(range(1, 9))])
+        present = [
+            {label_exposure_spectral_channel("D6", e["wavelength_um"]) for e in v["exposures"]} for v in visits
+        ]
+        expected = sorted(present[0] & present[1])  # visit 2 is missing band 6 by design
+        res = perform_band_balanced_stacking(visits, "D6")
+        self.assertEqual(res["shared_channels"], expected)
+        self.assertLess(len(expected), 10)
+        self.assertFalse(res["comparable"])
+        self.assertIn("UNRELIABLE", res["reliability_warning"])
+        for stack in res["visit_stacks"]:
+            self.assertEqual(stack["bands_used"], expected)
+            self.assertFalse(stack["comparable"])
+        self.assertEqual(res["visit_stacks"][0]["n_bands_present"], 17)
+
+    def test_track2_manifest_fields(self):
+        """Every stack and shot carries the fields agreed with Tracks 3 and 4."""
+        from backend.pipeline import execute_pipeline
+        res = execute_pipeline("WISE 0855-0714", "D6", "visit_blink")
+        t2 = res["manifest"]["track2"]
+        self.assertGreaterEqual(t2["n_bands_shared"], 10)
+        self.assertTrue(t2["comparable"])
+        for stack in t2["stacks"]:
+            for field in ("detector", "bands_used", "n_bands", "n_shots_per_band", "lambda_eff", "comparable"):
+                self.assertIn(field, stack)
+            self.assertEqual(stack["bands_used"], t2["bands_shared"])
+            self.assertEqual(sum(stack["n_shots_per_band"].values()), stack["n_shots_used"])
+            self.assertAlmostEqual(stack["lambda_eff"], t2["lambda_eff"], places=4)
+        for shot in t2["shots"]:
+            self.assertIsNotNone(shot["lambda_at_target"])
+            self.assertEqual(shot["band"], label_exposure_spectral_channel("D6", shot["lambda_at_target"]))
+        self.assertIn("stack", res["frames"][0])
+
+    def test_track2_matched_band_and_sub_bands(self):
+        """Matched-band frames all come from the chosen band; sub-bands hold ~4 bands each."""
+        from backend.pipeline import execute_pipeline
+        res = execute_pipeline("WISE 0855-0714", "D6", "wavelength_matched")
+        bands = {f["shot"]["band"] for f in res["frames"]}
+        self.assertEqual(len(bands), 1)
+        self.assertEqual(bands, {res["frames"][0]["shot"]["matched_band"]})
+        self.assertGreaterEqual(len(res["frames"]), 2)
+
+        from backend.track2_calibration.band_balancer import split_into_sub_bands
+        groups = split_into_sub_bands(list(range(1, 18)))
+        self.assertEqual(sum(len(g) for g in groups), 17)
+        self.assertTrue(all(3 <= len(g) <= 5 for g in groups))
+        self.assertEqual(split_into_sub_bands([2, 3, 4]), [[2, 3, 4]])
+
     def test_track2_flicker_audit_reduction(self):
         """Step 5: all three tests are measured, and the stacks reach the noise floor."""
         from backend.track2_calibration import clean_visit_exposures, register_shot
