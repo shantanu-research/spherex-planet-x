@@ -23,6 +23,7 @@ from backend.track1_orchestration.resolver import resolve_target, SPHEREx_PIXEL_
 from backend.track1_orchestration.cache import cache_instance, CACHE_DIR
 from backend.track2_calibration.band_balancer import DETECTOR_SPECS
 from backend.track3_spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
+from backend.track3_spectrophotometry.astrometric_validator import query_live_gaia_overlay
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.pipeline import execute_pipeline, generate_gif_export
 from backend.data_loader import target_catalog
@@ -218,19 +219,33 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             target_q = query.get("q", ["WISE 0855-0714"])[0]
             target = get_target_by_query(target_q)
             mjd = float(query.get("mjd", [60810.0])[0])
+            fov = float(query.get("fov", [6.5])[0])
 
-            sim_data = generate_simulated_target_visits(target_key=target["common_name"], detector="D6", grid_size=64)
             gaia_stars = []
-            for s in sim_data["field_stars"]:
-                gaia_stars.append({
-                    "source_id": f"Gaia DR3 {2026000000 + s['id']}",
-                    "pixel_x": round(s["x"], 2),
-                    "pixel_y": round(s["y"], 2),
-                    "g_mag": round(14.5 + (s["id"] % 6) * 0.8, 2),
-                    "teff_k": round(s["teff"], 0),
-                    "ruwe": round(1.02 + (s["id"] % 5) * 0.05, 2),
-                    "is_variable": False
-                })
+            try:
+                gaia_stars = query_live_gaia_overlay(
+                    ra_deg=target["ra_deg"],
+                    dec_deg=target["dec_deg"],
+                    fov_arcmin=fov,
+                    target_mjd=mjd,
+                    grid_size=64,
+                    pixscale_arcsec=SPHEREx_PIXEL_SCALE_ARCSEC
+                )
+            except Exception:
+                gaia_stars = []
+
+            if not gaia_stars:
+                sim_data = generate_simulated_target_visits(target_key=target["common_name"], detector="D6", grid_size=64)
+                for s in sim_data["field_stars"]:
+                    gaia_stars.append({
+                        "source_id": f"Gaia DR3 {2026000000 + s['id']}",
+                        "pixel_x": round(s["x"], 2),
+                        "pixel_y": round(s["y"], 2),
+                        "g_mag": round(14.5 + (s["id"] % 6) * 0.8, 2),
+                        "teff_k": round(s["teff"], 0),
+                        "ruwe": round(1.02 + (s["id"] % 5) * 0.05, 2),
+                        "is_variable": False
+                    })
 
             skybot_objects = []
             if "Planet X" in target["common_name"]:
