@@ -7,6 +7,8 @@ from typing import List, Dict, Any, Tuple
 import math
 import random
 import zlib
+
+from backend.track2_calibration.spectral_labels import channel_info, wavelength_from_band_position
 from ..track1_orchestration.catalog import BENCHMARK_TARGETS
 from ..track1_orchestration.resolver import propagate_coordinates, SPHEREx_PIXEL_SCALE_ARCSEC
 from ..track2_calibration.band_balancer import DETECTOR_SPECS, get_channel_wavelength
@@ -241,13 +243,15 @@ def generate_simulated_target_visits(
             half_band_shift=(v_idx >= 2),
             dropped_bands=dropped,
         )
-        band_width = (det_lmax - det_lmin) / 17.0
+
         noise_sigma = 0.35  # MJy/sr per pixel
         exposures = []
 
         for exp_idx, band_pos in enumerate(shot_positions):
-            # Exact wavelength the target is seen at in this shot (continuous, not a band centre)
-            shot_lambda = det_lmin + band_pos * band_width
+            # Exact wavelength the target is seen at in this shot (continuous, not a band
+            # centre), following the real SPHEREx channel spacing from the supplement table
+            shot_lambda = wavelength_from_band_position(detector, band_pos)
+            band_width = channel_info(detector, min(17, int(band_pos) + 1))["width"]
             dith_x = visit_rng.uniform(-0.5, 0.5)
             dith_y = visit_rng.uniform(-0.5, 0.5)
 

@@ -6,6 +6,8 @@ Eliminates artificial 20-30% brightness flicker caused by stepped Linear Variabl
 from typing import List, Dict, Any, Tuple, Optional
 import math
 
+from .spectral_labels import band_from_wavelength, channel_info
+
 # SPHEREx Detector Bandpass Definitions (Table 2.1)
 DETECTOR_SPECS = {
     "D1": {"name": "SPHEREx-D1", "lmin": 0.744, "lmax": 1.116, "R": 39, "dichroic_pair": "D4"},
@@ -38,13 +40,12 @@ def split_into_sub_bands(bands: List[int], size: int = SUB_BAND_SIZE) -> List[Li
 
 def get_channel_wavelength(detector: str, channel_idx: int) -> Tuple[float, float]:
     """
-    Returns (lambda_central_um, delta_lambda_um) for channel_idx in 1..17.
+    Returns (lambda_central_um, channel_width_um) for channel_idx in 1..17, from the
+    SPHEREx Explanatory Supplement channel table (Tables 29-34). Channels are close to
+    logarithmically spaced, not evenly split.
     """
-    spec = DETECTOR_SPECS.get(detector, DETECTOR_SPECS["D1"])
-    lmin, lmax = spec["lmin"], spec["lmax"]
-    step = (lmax - lmin) / 17.0
-    lc = lmin + (channel_idx - 0.5) * step
-    return round(lc, 4), round(step, 4)
+    info = channel_info(detector, channel_idx)
+    return round(info["lambda_c"], 4), round(info["width"], 4)
 
 def register_shot(
     image: List[List[Optional[float]]],
@@ -151,16 +152,11 @@ def fill_missing_bands(
 def label_exposure_spectral_channel(detector: str, target_wavelength_um: float) -> int:
     """
     Step 1: Spectral Labelling
-    Maps target central wavelength to discrete channel index b in {1..17}.
+    Maps the wavelength the target was seen at to its band b in {1..17}: the channel with
+    the nearest central wavelength in the Explanatory Supplement table (see
+    spectral_labels.py; for real files the wavelength comes from the spectral WCS).
     """
-    spec = DETECTOR_SPECS.get(detector, DETECTOR_SPECS["D1"])
-    lmin, lmax = spec["lmin"], spec["lmax"]
-    if target_wavelength_um <= lmin:
-        return 1
-    if target_wavelength_um >= lmax:
-        return 17
-    channel = 1 + int(((target_wavelength_um - lmin) / (lmax - lmin)) * 17.0)
-    return max(1, min(17, channel))
+    return band_from_wavelength(detector, target_wavelength_um)["band"]
 
 def perform_band_balanced_stacking(
     visits_exposures: List[Dict[str, Any]],

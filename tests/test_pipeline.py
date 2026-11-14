@@ -28,6 +28,12 @@ from backend.track4_rendering.stretching import apply_global_detector_asinh_stre
 from backend.track4_rendering.gif_encoder import encode_gif_stream, burn_telemetry_hud
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 
+try:
+    import astropy  # noqa: F401  (only needed to read real SPHEREx files)
+    _HAS_ASTROPY = True
+except ImportError:
+    _HAS_ASTROPY = False
+
 class TestSpherexPipeline(unittest.TestCase):
 
     def test_track1_resolver_stale_epoch(self):
@@ -197,6 +203,88 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertEqual(sum(len(g) for g in groups), 17)
         self.assertTrue(all(3 <= len(g) <= 5 for g in groups))
         self.assertEqual(split_into_sub_bands([2, 3, 4]), [[2, 3, 4]])
+
+    def test_track2_step1_channel_table(self):
+        """Bands come from the Explanatory Supplement table (nearest channel centre)."""
+        from backend.track2_calibration.spectral_labels import (
+            band_from_wavelength, channel_info, load_channel_table, wavelength_from_band_position,
+        )
+        table = load_channel_table()
+        self.assertEqual(sorted(table), [1, 2, 3, 4, 5, 6])
+        for det in range(1, 7):
+            self.assertEqual(sorted(table[det]), list(range(19)))
+            centres = [table[det][c]["lambda_c"] for c in range(1, 18)]
+            self.assertEqual(centres, sorted(centres))
+            for c in range(1, 18):
+                # each channel centre (and the simulator's position for it) labels as itself
+                self.assertEqual(band_from_wavelength(det, table[det][c]["lambda_c"])["band"], c)
+                self.assertEqual(label_exposure_spectral_channel(f"D{det}", wavelength_from_band_position(det, c - 0.5)), c)
+        self.assertEqual(band_from_wavelength("D6", 4.62)["band"], 7)  # the PDF's example
+        self.assertFalse(band_from_wavelength("D6", 5.02)["in_nominal_range"])
+        self.assertAlmostEqual(channel_info("D1", 1)["lambda_min"], 0.743)
+
+    @unittest.skipUnless(_HAS_ASTROPY, "astropy not installed")
+    def test_track2_step1_label_real_format_file(self):
+        """Step 1 on a SPHEREx-format FITS file: target pixel -> spectral WCS wavelength -> band."""
+        import tempfile
+        from astropy.coordinates import SkyCoord
+        from astropy.io import fits
+        from astropy.wcs import WCS
+        from backend.track2_calibration.spectral_labels import label_spherex_shot, main
+        from tests.fake_spherex import make_fake_spherex_mef
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "level2_D6_fake.fits")
+            lam_lo, lam_hi, n = make_fake_spherex_mef(path, ra0=135.0, dec0=-7.0, detector=6)
+            with fits.open(path) as hdul:
+                sky = WCS(hdul["IMAGE"].header).pixel_to_world(20.0, 40.0)
+            info = label_spherex_shot(path, sky.ra.deg, sky.dec.deg)
+            self.assertEqual(info["detector"], "D6")
+            self.assertTrue(info["on_image"])
+            self.assertAlmostEqual(info["x_px"], 20.0, places=2)
+            self.assertAlmostEqual(info["y_px"], 40.0, places=2)
+            expected = lam_lo + (lam_hi - lam_lo) * 40.0 / (n - 1)
+            self.assertAlmostEqual(info["lambda_at_target"], expected, places=4)
+            self.assertEqual(info["band"], label_exposure_spectral_channel("D6", expected))
+            self.assertAlmostEqual(info["bandwidth_um"], 0.037, places=4)
+            self.assertEqual(info["mjd"], 60810.5)
+            self.assertEqual(main([path, str(sky.ra.deg), str(sky.dec.deg)]), 0)
+
+            far = label_spherex_shot(path, 140.0, -7.0)  # 5 degrees away
+            self.assertFalse(far["on_image"])
+
+    @unittest.skipUnless(_HAS_ASTROPY, "astropy not installed")
+    def test_track2_step1_real_data_path(self):
+        """Real-archive SPHEREx frames carry lambda_at_target and band from their spectral WCS."""
+        import shutil
+        import tempfile
+        import backend.data_loader as data_loader
+        from backend.pipeline import execute_pipeline
+        from tests.fake_spherex import make_fake_spherex_mef
+
+        tmp = tempfile.mkdtemp()
+        saved = data_loader.target_catalog.archive_dir
+        try:
+            folder = os.path.join(tmp, "barnards_star")
+            os.makedirs(folder)
+            ra, dec = resolve_target("Barnard's Star")["epoch_propagation"]["ra_prop_deg"], \
+                resolve_target("Barnard's Star")["epoch_propagation"]["dec_prop_deg"]
+            make_fake_spherex_mef(os.path.join(folder, "spherex_level2_D6_2025-05-15.fits"),
+                                  ra0=ra, dec0=dec, detector=6, lam_lo=4.42, lam_hi=5.0)
+            data_loader.target_catalog.archive_dir = tmp
+            res = execute_pipeline("Barnard's Star", "D6", "spectral_color", source_mode="real")
+            t2 = res["manifest"]["track2"]
+            self.assertEqual(t2["status"], "labels_only")
+            shot = t2["shots"][0]
+            self.assertEqual(shot["detector"], "D6")
+            self.assertTrue(shot["on_image"])
+            self.assertAlmostEqual(shot["lambda_at_target"], 4.71, places=2)  # centre of the fake LVF
+            self.assertEqual(shot["band"], label_exposure_spectral_channel("D6", shot["lambda_at_target"]))
+            self.assertEqual(res["frames"][0]["wavelength_um"], shot["lambda_at_target"])
+            self.assertEqual(res["frames"][0]["shot"]["band"], shot["band"])
+        finally:
+            data_loader.target_catalog.archive_dir = saved
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def test_track2_flicker_audit_reduction(self):
         """Step 5: all three tests are measured, and the stacks reach the noise floor."""
