@@ -254,6 +254,33 @@ class TestSpherexPipeline(unittest.TestCase):
             self.assertFalse(far["on_image"])
 
     @unittest.skipUnless(_HAS_ASTROPY, "astropy not installed")
+    def test_track2_step1_label_real_spherex_cutout(self):
+        """Step 1 on a REAL SPHEREx DR1 Level-2 cutout (WISE 0855, D6, 2025-05-05).
+
+        Real IRSA cutouts shift the WCS-WAVE lookup table's reference pixels
+        (CRPIX1W/2W = -335/-9 here), which the fake files never exercise.
+        Expected values were checked by a hand bilinear lookup in the raw table.
+        """
+        from astropy.io import fits
+        from backend.track2_calibration.spectral_labels import label_spherex_shot
+
+        path = os.path.join(PROJECT_ROOT, "tests", "data", "spherex_dr1_l2_wise0855_D6.fits")
+        with fits.open(path) as hdul:
+            header = hdul["IMAGE"].header
+            self.assertEqual(header["CTYPE1W"], "WAVE-TAB")
+            self.assertEqual((header["CRPIX1W"], header["CRPIX2W"]), (-335.0, -9.0))
+
+        info = label_spherex_shot(path, 133.7599, -7.2423)  # cutout centre
+        self.assertEqual(info["detector"], "D6")
+        self.assertTrue(info["on_image"])
+        self.assertAlmostEqual(info["x_px"], 23.87, places=1)
+        self.assertAlmostEqual(info["y_px"], 23.63, places=1)
+        self.assertAlmostEqual(info["lambda_at_target"], 5.0034, places=4)
+        self.assertAlmostEqual(info["bandwidth_um"], 0.0376, places=4)
+        self.assertEqual(info["band"], 17)
+        self.assertTrue(info["in_nominal_range"])
+
+    @unittest.skipUnless(_HAS_ASTROPY, "astropy not installed")
     def test_track2_step1_real_data_path(self):
         """Real-archive SPHEREx frames carry lambda_at_target and band from their spectral WCS."""
         import shutil
