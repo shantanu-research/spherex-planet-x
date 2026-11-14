@@ -12,6 +12,15 @@
   downloads them (8 at a time, cached) and returns a frame list; each frame's `file_url` is served under `/files/...`.
   Tip: ask for one detector (`det=D5`) — each cutout is ~4 MB, mostly PSF data.
 - `GET /api/collections` — SPHEREx collections IRSA currently offers (DR1 check).
+- `GET /api/precached` (list) or `/api/precached?slug=wise-0855-0714` — the demo targets prepared by
+  `precache.bat`: position corrected for proper motion, visits, and frames per best detector. Instant, works offline.
+
+## Pre-cache the demo targets (run on every machine that serves the demo)
+Double-click `precache.bat` (~10 min). It reads `test_targets.csv` (repo `data/reference/`), moves each
+target to its 2025.9 position using its proper motion, runs one archive search per target, downloads
+4 frames per visit for each best detector (6 arcmin cutouts, ~1 GB total) and writes `cache/targets/*.json`.
+Re-run it to fill any cutouts IRSA refused with 503 "busy"; finished downloads are kept.
+Last run (2026-11-14): 5/5 targets, 234/234 cutouts.
 
 ## Exposure fields (agree these with Tracks 2–4)
 `image_url, cutout_url, t_start_mjd, t_end_mjd, t_start_iso, detector, release, visit` (+ `file_url, cached, error` from /api/cutouts)

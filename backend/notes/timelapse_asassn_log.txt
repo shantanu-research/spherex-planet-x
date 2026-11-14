@@ -1,0 +1,14 @@
+Time-lapse for ASASSN-V J181412.05+643946.3 at (273.5502, 64.6629), detectors ['D2', 'D3', 'D6'], one frame per 7 days
+search: 21714 exposures in 3 s
+  D2: 4632 candidates -> 76 frames at 1.2399 um (+/-0.0171), span 524.8 d, usable photometry 66, saturated 0, flux range 0.84-1.07 (797 s)
+  D3: 3125 candidates -> 58 frames at 1.8341 um (+/-0.0242), span 526.9 d, usable photometry 53, saturated 0, flux range 0.75-1.18 (523 s)
+  D6: 3113 candidates -> 58 frames at 4.6033 um (+/-0.0183), span 523.0 d, usable photometry 52, saturated 1, flux range 0.87-1.09 (600 s)
+
+==================== SUMMARY ====================
+det  frames  span_d  wave_um   usable  flux_norm range
+D2       76   524.8   1.2399    66/76  0.84-1.07
+D3       58   526.9   1.8341    53/58  0.75-1.18
+D6       58   523.0   4.6033    52/58  0.87-1.09
+Light curve: C:\SPHEREx\notes\asassn-v-j181412-05-643946-3_lightcurve.csv
+Total time: 32.0 min
+TIMELAPSE_DONE

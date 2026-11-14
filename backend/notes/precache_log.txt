@@ -1,0 +1,47 @@
+Pre-caching 5 targets: ["Barnard's Star", 'Epsilon Indi Ba/Bb', 'WISE 0855-0714', 'RW Aurigae', 'R Draconis']
+
+=== Barnard's Star  (catalogue 269.4521, 4.6933 @ 2000.0 -> 269.4463, 4.7678 @ 2025.9)
+  search: 358 exposures, 3 visits in 0 s
+  D1: 12/12 cutouts in 17 s
+  D2: 12/12 cutouts in 52 s
+  D3: 12/12 cutouts in 12 s
+
+=== Epsilon Indi Ba/Bb  (catalogue 331.0420, -56.7830 @ 2000.0 -> 331.0943, -56.8008 @ 2025.9)
+  search: 458 exposures, 4 visits in 0 s
+  D1: 11/11 cutouts in 11 s
+  D2: 16/16 cutouts in 5 s
+  D3: 16/16 cutouts in 0 s
+  D4: 12/12 cutouts in 20 s
+
+=== WISE 0855-0714  (catalogue 133.7951, -7.2451 @ 2010.5 -> 133.7599, -7.2423 @ 2025.9)
+  search: 258 exposures, 3 visits in 0 s
+  D5: 12/12 cutouts in 0 s
+  D6: 11/11 cutouts in 0 s
+
+=== RW Aurigae  (catalogue 76.9563, 30.4000 @ 2000.0 -> 76.9563, 30.4000 @ 2025.9)
+  search: 335 exposures, 3 visits in 0 s
+  D1: 12/12 cutouts in 7 s
+  D2: 12/12 cutouts in 17 s
+  D3: 12/12 cutouts in 13 s
+  D4: 12/12 cutouts in 15 s
+  D5: 12/12 cutouts in 15 s
+  D6: 12/12 cutouts in 56 s
+
+=== R Draconis  (catalogue 248.1675, 66.7550 @ 2000.0 -> 248.1675, 66.7550 @ 2025.9)
+  search: 2493 exposures, 2 visits in 0 s
+  D1: 8/8 cutouts in 0 s
+  D2: 8/8 cutouts in 14 s
+  D3: 8/8 cutouts in 14 s
+  D4: 8/8 cutouts in 0 s
+  D5: 8/8 cutouts in 15 s
+  D6: 8/8 cutouts in 0 s
+
+==================== SUMMARY ====================
+target                 exposures visits   cutouts  status
+Barnard's Star               358      3     36/36  OK
+Epsilon Indi Ba/Bb           458      4     55/55  OK
+WISE 0855-0714               258      3     23/23  OK
+RW Aurigae                   335      3     72/72  OK
+R Draconis                  2493      2     48/48  OK
+Total time: 4.8 min
+PRECACHE_DONE

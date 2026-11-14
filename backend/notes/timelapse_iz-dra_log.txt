@@ -1,0 +1,12 @@
+Time-lapse for IZ Dra at (282.4622, 62.2904), detectors ['D5', 'D6'], one frame per 7 days
+search: 3413 exposures in 1 s
+  D5: 92 candidates -> 11 frames at 3.8173 um (+/-0.0189), span 498.6 d, usable photometry 2, saturated 9, flux range 0.92-1.08 (67 s)
+  D6: 929 candidates -> 28 frames at 4.5666 um (+/-0.0183), span 484.0 d, usable photometry 24, saturated 4, flux range 0.76-1.19 (180 s)
+
+==================== SUMMARY ====================
+det  frames  span_d  wave_um   usable  flux_norm range
+D5       11   498.6   3.8173     2/11  0.92-1.08
+D6       28   484.0   4.5666    24/28  0.76-1.19
+Light curve: C:\SPHEREx\notes\iz-dra_lightcurve.csv
+Total time: 4.1 min
+TIMELAPSE_DONE

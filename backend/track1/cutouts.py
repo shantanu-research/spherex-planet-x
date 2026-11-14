@@ -9,7 +9,7 @@ import httpx
 
 CUTOUT_DIR = Path(__file__).resolve().parent.parent / "cache" / "cutouts"
 MAX_PARALLEL = 8
-RETRIES = 3
+RETRIES = 5          # IRSA returns 503 "busy" under load; back off 3, 6, 12, 24 s
 TIMEOUT_S = 90.0
 
 
@@ -33,7 +33,8 @@ async def _fetch_one(client: httpx.AsyncClient, sem: asyncio.Semaphore, url: str
                 return {"url": url, "file": path.name, "cached": False, "error": None}
             except Exception as ex:  # network hiccup, 5xx, timeout
                 err = f"{type(ex).__name__}: {ex}"
-                await asyncio.sleep(2 ** attempt)
+                if attempt < RETRIES - 1:
+                    await asyncio.sleep(3 * 2 ** attempt)
         return {"url": url, "file": None, "cached": False, "error": err}
 
 

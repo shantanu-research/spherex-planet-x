@@ -16,7 +16,7 @@ from astropy.time import Time
 
 IRSA_BASE = "https://irsa.ipac.caltech.edu/"
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache" / "queries"
-QUERY_CACHE_SECONDS = 6 * 3600
+QUERY_CACHE_SECONDS = 7 * 24 * 3600   # IRSA ingests weekly; demo targets must not expire
 
 # Newer releases win when the same exposure appears twice.
 RELEASE_RANK = {"dr1": 3, "qr3": 2, "qr2": 1, "qr": 0, "unknown": -1}
@@ -112,8 +112,13 @@ def _run_tap(query: str):
 def search(ra: float, dec: float, size_deg: float = 0.083, detector: str | None = None,
            t_min_mjd: float | None = None, t_max_mjd: float | None = None,
            use_cache: bool = True, tap=None) -> list[Exposure]:
-    """Position -> deduplicated list of exposures (visit numbers not yet set)."""
-    query = build_query(ra, dec, detector, t_min_mjd, t_max_mjd)
+    """Position -> deduplicated list of exposures (visit numbers not yet set).
+
+    One archive query per position (all detectors, all times) is cached; the
+    detector and time filters are applied here, so they never trigger a new
+    ~70 s IRSA query.
+    """
+    query = build_query(ra, dec)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = CACHE_DIR / (hashlib.sha1(query.encode()).hexdigest() + ".json")
     if use_cache and cache_file.exists() and time.time() - cache_file.stat().st_mtime < QUERY_CACHE_SECONDS:
@@ -122,6 +127,13 @@ def search(ra: float, dec: float, size_deg: float = 0.083, detector: str | None 
         rows = (tap or _run_tap)(query)
         rows = [[str(u), float(a), float(b), str(c)] for u, a, b, c in rows]
         cache_file.write_text(json.dumps(rows))
+    if detector:
+        want = _detector_name(detector)
+        rows = [r for r in rows if r[3] == want]
+    if t_min_mjd is not None:
+        rows = [r for r in rows if r[1] >= t_min_mjd]
+    if t_max_mjd is not None:
+        rows = [r for r in rows if r[1] <= t_max_mjd]
     return deduplicate(rows_to_exposures(rows, ra, dec, size_deg))
 
 

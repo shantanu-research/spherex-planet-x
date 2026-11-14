@@ -89,6 +89,67 @@ async def get_cutouts(ra: float | None = None, dec: float | None = None, name: s
             "frames": frames}
 
 
+@app.get("/api/timelapse")
+async def timelapse_endpoint(
+        ra: float | None = None, dec: float | None = None, name: str | None = None,
+        det: str = Query(..., description="detector, e.g. D3"),
+        every_days: float = Query(7.0, gt=0, le=365, description="one frame per this many days"),
+        wave: float | None = Query(None, description="reference wavelength (um); default = best-covered channel"),
+        tol: float | None = Query(None, description="wavelength tolerance (um); default = half a channel"),
+        size: float = Query(0.1, gt=0, le=0.25),
+        max_frames: int = Query(120, ge=2, le=400),
+        download: bool = True):
+    """Same-wavelength time-lapse sampled by date, plus a relative light curve."""
+    from . import timelapse
+    ra, dec, exps, qsecs = _observations(ra, dec, name, size, None, None, None)
+    t0 = time.time()
+    out = await timelapse.build_timelapse(exps, ra, dec, det, every_days=every_days, wave_um=wave,
+                                          tol_um=tol, max_frames=max_frames, download=download)
+    out["query_seconds"] = qsecs
+    out["build_seconds"] = round(time.time() - t0, 1)
+    return out
+
+
+PRECACHE_DIR = cutouts.CUTOUT_DIR.parent / "targets"
+TIMELAPSE_DIR = cutouts.CUTOUT_DIR.parent / "timelapse"
+
+
+@app.get("/api/precached/timelapse")
+def precached_timelapse(slug: str | None = None, det: str | None = None):
+    """Time-lapses prepared by scripts/precache_timelapse.py."""
+    import json
+    if slug and det:
+        f = TIMELAPSE_DIR / f"{slug}_{archive._detector_name(det)[-2:]}.json"
+        if not f.exists():
+            raise HTTPException(404, f"No pre-cached time-lapse for {slug} {det}")
+        return json.loads(f.read_text())
+    out = []
+    for f in sorted(TIMELAPSE_DIR.glob("*.json")):
+        m = json.loads(f.read_text())
+        out.append({"slug": m.get("slug"), "detector": m["detector"], "n_frames": m["n_frames"],
+                    "span_days": m["span_days"], "reference_wave_um": m["reference_wave_um"],
+                    "n_usable_photometry": m["n_usable_photometry"]})
+    return {"timelapses": out}
+
+
+@app.get("/api/precached")
+def precached(slug: str | None = None):
+    """Demo targets prepared by scripts/precache.py (instant, works offline)."""
+    import json
+    if slug:
+        f = PRECACHE_DIR / f"{slug}.json"
+        if not f.exists():
+            raise HTTPException(404, f"No pre-cached target '{slug}'")
+        return json.loads(f.read_text())
+    out = []
+    for f in sorted(PRECACHE_DIR.glob("*.json")):
+        m = json.loads(f.read_text())
+        out.append({"slug": f.stem, "name": m["target"]["name"], "ra": m["ra"], "dec": m["dec"],
+                    "n_exposures": m["n_exposures"], "n_visits": len(m["visits"]),
+                    "detectors": list(m["frames_by_detector"]), "created_utc": m["created_utc"]})
+    return {"targets": out}
+
+
 @app.get("/api/collections")
 def collections():
     try:
