@@ -5,13 +5,14 @@ Decoupled from HTTP transport to support CLI, batch workflows, and REST APIs.
 Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Plan.
 """
 
+import functools
 import math
 import io
 from typing import Dict, Any, List, Optional, Tuple
 from backend.track1_orchestration.catalog import get_target_by_query
 from backend.track1_orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
-from backend.track2_calibration.cleaning import clean_frame_data
-from backend.track2_calibration.band_balancer import perform_band_balanced_stacking
+from backend.track2_calibration.cleaning import clean_frame_data, clean_visit_exposures
+from backend.track2_calibration.band_balancer import perform_band_balanced_stacking, register_shot
 from backend.track2_calibration.flicker_audit import run_still_star_flicker_audit
 from backend.track2_calibration.differencing import (
     compute_difference_frames,
@@ -34,6 +35,17 @@ from backend.track4_rendering.stretching import (
 from backend.track4_rendering.gif_encoder import burn_telemetry_hud, encode_gif_stream
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.data_loader import target_catalog, SPHEREX_BANDS
+
+
+@functools.lru_cache(maxsize=48)
+def _simulated_balanced_stacks(target_key: str, detector: str) -> Tuple[Dict[str, Any], ...]:
+    """
+    Cleaned, aligned, band-balanced visit stacks for one simulated target/detector.
+    The simulation is deterministic, so the result is cached; callers must not modify it.
+    """
+    visits = generate_simulated_target_visits(target_key, detector, 64)["visits"]
+    clean_visit_exposures(visits)
+    return tuple(perform_band_balanced_stacking(visits, detector)["visit_stacks"])
 
 
 def execute_pipeline(
@@ -198,14 +210,17 @@ def execute_pipeline(
                     "rgb_pixels": rgb_frame
                 })
 
+            # Real archive frames are not band-balanced yet (Track 2 Step 1 needs the
+            # wavelength WCS), so there is nothing honest to audit: report "not run".
             flicker_audit = {
-                "status": "completed",
-                "mean_raw_flicker_pct": 1.42,
-                "mean_balanced_flicker_pct": 0.48,
-                "overall_flicker_suppression_pct": 66.2,
+                "status": "not_run",
+                "reason": "Real-archive frames are not band-balanced stacked yet; Step 5 audit only runs on stacks.",
+                "mean_raw_flicker_pct": None,
+                "mean_balanced_flicker_pct": None,
+                "overall_flicker_suppression_pct": None,
+                "null_test_chi2_nu": None,
                 "monitored_stars_count": len(field_stars),
-                "audit_passed": True,
-                "methodology": "NASA Calibrated Absolute Flux Preservation"
+                "stars": [],
             }
 
             pm_total = round(math.sqrt(target_meta.get("pm_ra_mas", 0.0)**2 + target_meta.get("pm_dec_mas", 0.0)**2) / 1000.0, 3)
@@ -289,19 +304,33 @@ def execute_pipeline(
     star_positions = [(s["x"], s["y"]) for s in field_stars]
 
     # 2. Track 2: Cleaning & Akhilesh's 5-Step Band-Balanced Stacking
-    for v in raw_visits:
-        for exp in v["exposures"]:
-            clean_img, clean_wt, _ = clean_frame_data(
-                exp["image"], exp["flags"], exp["variance"], exp["zodi"]
-            )
-            exp["cleaned_image"] = clean_img
+    # Every shot is cleaned (flags masked, ZODI + background removed) before stacking
+    cleaning_summary = clean_visit_exposures(raw_visits)
 
     stack_res = perform_band_balanced_stacking(raw_visits, detector=detector)
     balanced_visits = stack_res["visit_stacks"]
 
     # Track 2: Automated Still-Star Flicker Audit
-    raw_first_frames = [{"image": v["exposures"][0]["image"]} for v in raw_visits]
-    flicker_audit = run_still_star_flicker_audit(raw_first_frames, balanced_visits, star_positions)
+    # Naive series = every single (cleaned) shot in time order; the target is kept out of the tests
+    naive_shots = sorted(
+        (e for v in raw_visits for e in v["exposures"]), key=lambda e: e.get("mjd_mid", 0.0)
+    )
+    # Shots are aligned like the stacks are, so the comparison isolates the colour effect
+    for e in naive_shots:
+        if "registered_cleaned" not in e:  # stacking already aligned most shots; reuse those
+            e["registered_cleaned"] = register_shot(
+                e["cleaned_image"], e.get("variance"),
+                float(e.get("dither_x", 0.0)), float(e.get("dither_y", 0.0)),
+            )
+    naive_frames = [{"image": e["registered_cleaned"][0]} for e in naive_shots]
+    grid_center = len(raw_visits[0]["exposures"][0]["image"]) / 2.0
+    target_positions = [
+        (grid_center + v["target_displacement_px"][0], grid_center + v["target_displacement_px"][1])
+        for v in raw_visits
+    ]
+    flicker_audit = run_still_star_flicker_audit(
+        naive_frames, balanced_visits, star_positions, exclude_positions=target_positions
+    )
 
     # Track 2: Temporal Median Template & Difference Imaging
     balanced_images = [v["stacked_image"] for v in balanced_visits]
@@ -401,12 +430,9 @@ def execute_pipeline(
     # Multi-band frames (D1, D3, D6) if multiband mode requested
     d1_stacks, d3_stacks, d6_stacks = None, None, None
     if eff_color_mode == "multiband":
-        d1_sim = generate_simulated_target_visits(target_key, "D1", 64)["visits"]
-        d3_sim = generate_simulated_target_visits(target_key, "D3", 64)["visits"]
-        d6_sim = generate_simulated_target_visits(target_key, "D6", 64)["visits"]
-        d1_stacks = perform_band_balanced_stacking(d1_sim, "D1")["visit_stacks"]
-        d3_stacks = perform_band_balanced_stacking(d3_sim, "D3")["visit_stacks"]
-        d6_stacks = perform_band_balanced_stacking(d6_sim, "D6")["visit_stacks"]
+        d1_stacks = _simulated_balanced_stacks(target_key, "D1")
+        d3_stacks = _simulated_balanced_stacks(target_key, "D3")
+        d6_stacks = _simulated_balanced_stacks(target_key, "D6")
 
     # Render processed frames
     rendered_frames = []
@@ -483,7 +509,10 @@ def execute_pipeline(
         "coadded_visits": len(rendered_frames),
         "detection_verdict": "BELOW_SINGLE_VISIT_THRESHOLD (Requires Shift-and-Stack Coadd)" if "Planet X" in target_key else "CONFIRMED_POINT_SOURCE",
         "zodiacal_light_subtraction": "Simulated ZODI gradient modeled",
-        "cosmic_ray_filter": "Artifact flags cleaned"
+        "cosmic_ray_filter": (
+            f"{cleaning_summary['n_pixels_masked']} flagged pixels masked across "
+            f"{cleaning_summary['n_exposures_cleaned']} shots before stacking"
+        ),
     }
 
     return {

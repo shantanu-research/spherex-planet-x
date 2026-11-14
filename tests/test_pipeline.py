@@ -72,19 +72,108 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertGreaterEqual(res["n_shared_channels"], 1)
         self.assertEqual(len(res["visit_stacks"]), len(visits))
 
+    def test_track2_simulator_exercises_band_balancing(self):
+        """Simulated visits must have uneven, partly missing band coverage and real colour flicker."""
+        from collections import Counter
+        from backend.track2_calibration.flicker_audit import measure_aperture_flux
+
+        sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=32)
+        again = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=32)
+        self.assertEqual(sim["field_stars"][0]["x"], again["field_stars"][0]["x"], "Simulation must be deterministic")
+
+        per_visit = [
+            Counter(label_exposure_spectral_channel("D6", e["wavelength_um"]) for e in v["exposures"])
+            for v in sim["visits"]
+        ]
+        # Visit 2 is missing bands 6 and 13; shots per band differ between visits
+        self.assertNotIn(6, per_visit[1])
+        self.assertNotIn(13, per_visit[1])
+        self.assertNotEqual(per_visit[0], per_visit[2])
+        # Survey 3 is shifted by half a band: some bands get several shots
+        self.assertGreater(max(per_visit[2].values()), 2)
+
+        stack = perform_band_balanced_stacking(sim["visits"], "D6")
+        self.assertGreaterEqual(stack["n_shared_channels"], 10)
+        self.assertLess(stack["n_shared_channels"], 17)
+
+        # Naive single shots in time order flicker because of each star's colour
+        star = max(sim["field_stars"], key=lambda s: s["teff"])
+        fluxes = [measure_aperture_flux(e["image"], star["x"], star["y"]) for v in sim["visits"] for e in v["exposures"]]
+        _, _, scatter = compute_flicker_statistics(fluxes)
+        self.assertGreater(scatter, 0.05)
+
+    def test_track2_stacks_use_cleaned_images(self):
+        """Flagged hot pixels must not leak into band-balanced stacks."""
+        from backend.track2_calibration import clean_visit_exposures
+
+        sim = generate_simulated_target_visits("Barnard's Star", detector="D3", grid_size=32)
+        summary = clean_visit_exposures(sim["visits"])
+        self.assertGreater(summary["n_pixels_masked"], 0)
+
+        res = perform_band_balanced_stacking(sim["visits"], "D3")
+        hot_spots = {
+            (x, y)
+            for v in sim["visits"] for e in v["exposures"]
+            for y, row in enumerate(e["flags"]) for x, f in enumerate(row)
+            if f & (1 << 10) and 2 <= x < 30 and 2 <= y < 30
+            and all((x - s["x"]) ** 2 + (y - s["y"]) ** 2 > 36 for s in sim["field_stars"])
+            and (x - 16) ** 2 + (y - 16) ** 2 > 36
+        }
+        self.assertTrue(hot_spots)
+        for stack in res["visit_stacks"]:
+            self.assertTrue(stack["used_cleaned_images"])
+            self.assertEqual(stack["n_masked_pixels"], 0)
+            img = stack["stacked_image"]
+            for x, y in hot_spots:
+                neighbours = sorted(img[y + dy][x + dx] for dy in (-2, 0, 2) for dx in (-2, 0, 2) if dx or dy)
+                self.assertLess(img[y][x] - neighbours[len(neighbours) // 2], 0.5)
+
     def test_track2_flicker_audit_reduction(self):
-        """Verify Still-Star Photometric Stability Audit achieves > 60% flicker suppression."""
-        sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=64)
-        # Raw chronological playback: each exposure observes at a different LVF channel
-        raw_frames = [{"image": v["exposures"][i % 4]["image"]} for i, v in enumerate(sim["visits"])]
+        """Step 5: all three tests are measured, and the stacks reach the noise floor."""
+        from backend.track2_calibration import clean_visit_exposures, register_shot
+
+        sim = generate_simulated_target_visits("Planet X Candidate", detector="D6", grid_size=64)
+        clean_visit_exposures(sim["visits"])
         stacked = perform_band_balanced_stacking(sim["visits"], "D6")["visit_stacks"]
-        stars = [(s["x"], s["y"]) for s in sim["field_stars"][:15]]
-        
-        audit = run_still_star_flicker_audit(raw_frames, stacked, stars)
+
+        # Naive method: every single shot, in time order (aligned like the stacks)
+        shots = sorted((e for v in sim["visits"] for e in v["exposures"]), key=lambda e: e["mjd_mid"])
+        naive = [{"image": register_shot(e["cleaned_image"], None, e["dither_x"], e["dither_y"])[0]} for e in shots]
+        stars = [(s["x"], s["y"]) for s in sim["field_stars"]]
+        target = [(32 + v["target_displacement_px"][0], 32 + v["target_displacement_px"][1]) for v in sim["visits"]]
+
+        audit = run_still_star_flicker_audit(naive, stacked, stars, exclude_positions=target)
         self.assertEqual(audit["status"], "completed")
+        self.assertGreaterEqual(audit["n_stars_audited"], 20)
+        self.assertEqual(audit["n_raw_shots"], len(shots))
+
+        # 2. Before vs after: real flicker in single shots, almost none in stacks
         self.assertGreater(audit["mean_raw_flicker_pct"], 5.0)
-        self.assertLess(audit["mean_balanced_flicker_pct"], 4.0)
-        self.assertGreater(audit["overall_flicker_suppression_pct"], 50.0)
+        self.assertLess(audit["mean_balanced_flicker_pct"], 0.5)
+        self.assertLess(audit["mean_balanced_flicker_pct"], 2.0 * audit["mean_balanced_noise_floor_pct"])
+
+        # 1. Ratio test: still stars agree between visits
+        self.assertTrue(audit["ratio_test"]["passed"])
+        self.assertLess(audit["ratio_test"]["max_abs_deviation_pct"], 2.0)
+
+        # 3. Difference test: pure noise, no leftover stars
+        self.assertTrue(audit["null_test_passed"], audit["null_test_verdict"])
+        self.assertGreater(audit["null_test_chi2_nu"], 0.6)
+        self.assertLess(audit["null_test_chi2_nu"], 1.5)
+
+    def test_track2_alignment_is_needed(self):
+        """Without aligning shots, pointing jitter leaves leftover star light in differences."""
+        from backend.track2_calibration import clean_visit_exposures
+
+        sim = generate_simulated_target_visits("Planet X Candidate", detector="D6", grid_size=64)
+        clean_visit_exposures(sim["visits"])
+        stars = [(s["x"], s["y"]) for s in sim["field_stars"]]
+        target = [(32 + v["target_displacement_px"][0], 32 + v["target_displacement_px"][1]) for v in sim["visits"]]
+        naive = [{"image": e["cleaned_image"]} for v in sim["visits"] for e in v["exposures"]]
+
+        unaligned = perform_band_balanced_stacking(sim["visits"], "D6", register=False)["visit_stacks"]
+        audit = run_still_star_flicker_audit(naive, unaligned, stars, exclude_positions=target)
+        self.assertGreater(audit["null_test_star_chi2_nu"], 5.0)
 
     def test_track3_102_channel_spectrophotometry(self):
         """Verify full 102-channel grid across D1-D6 and molecular line detection."""

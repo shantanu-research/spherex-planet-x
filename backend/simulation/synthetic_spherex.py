@@ -6,6 +6,7 @@ Generates physically grounded SPHEREx multi-visit cutouts including the real LVF
 from typing import List, Dict, Any, Tuple
 import math
 import random
+import zlib
 from ..track1_orchestration.catalog import BENCHMARK_TARGETS
 from ..track1_orchestration.resolver import propagate_coordinates, SPHEREx_PIXEL_SCALE_ARCSEC
 from ..track2_calibration.band_balancer import DETECTOR_SPECS, get_channel_wavelength
@@ -63,18 +64,77 @@ def add_psf_source(
             val = peak_flux * math.exp(-dist2 / sigma2)
             image[y][x] += val
 
-def get_star_spectral_slope(wavelength_um: float, teff: float) -> float:
-    """Computes color slope across the infrared LVF bandpass."""
-    # Rayleigh-Jeans / Wien approx relative to 2.5 um
-    # F ~ lambda^(-4) in RJ or Wien exponential
-    l_ratio = wavelength_um / 2.5
-    exponent = 14387.77 / (wavelength_um * teff)
-    norm_exp = 14387.77 / (2.5 * teff)
-    
-    # Relative brightness variation across the LVF channel
-    f_l = (l_ratio ** -5) / (math.exp(min(40.0, exponent)) - 1.0)
-    f_norm = (1.0 ** -5) / (math.exp(min(40.0, norm_exp)) - 1.0)
-    return max(0.2, min(3.0, f_l / max(1e-9, f_norm)))
+def get_star_spectral_slope(
+    wavelength_um: float,
+    teff: float,
+    reference_um: float = 2.5,
+    clamp: Tuple[float, float] = (0.05, 20.0),
+) -> float:
+    """
+    Relative surface brightness of a blackbody at `wavelength_um` versus `reference_um`.
+
+    Uses B_nu (per unit frequency, matching SPHEREx MJy/sr units):
+        B_nu(lambda, T) ∝ lambda^-3 / (exp(hc / lambda k T) - 1)
+    This is the physical origin of LVF flicker: the same star looks brighter or
+    fainter depending on which wavelength the filter shows it at, and the size of
+    the effect depends on the star's own colour (temperature).
+    """
+    c2 = 14387.77  # hc/k in um*K
+
+    def b_nu(lam: float) -> float:
+        x = c2 / (lam * teff)
+        if x > 700.0:
+            return 0.0
+        return (lam ** -3) / math.expm1(x)
+
+    ref = b_nu(reference_um)
+    if ref <= 0.0:
+        return clamp[0]
+    return max(clamp[0], min(clamp[1], b_nu(wavelength_um) / ref))
+
+
+def _stable_seed(*parts: Any) -> int:
+    """Deterministic seed (Python's hash() is randomised per process)."""
+    return zlib.crc32("|".join(str(p) for p in parts).encode("utf-8"))
+
+
+def plan_visit_shots(
+    rng: random.Random,
+    n_bands: int = 17,
+    n_sweeps: int = 2,
+    half_band_shift: bool = False,
+    position_jitter: float = 0.2,
+    n_repeat_shots: int = 4,
+    dropped_bands: Tuple[int, ...] = (),
+) -> List[float]:
+    """
+    Plans where on the LVF the target lands for every shot in one visit.
+
+    Returns fractional band positions in [0, n_bands): position p means the target is seen
+    at lambda = lmin + p * band_width, i.e. inside band floor(p) + 1.
+
+    - Each sweep steps once across all bands, starting at a random band (time order).
+    - Surveys 3-4 are shifted by half a band, so shots land near band edges and fall
+      into either neighbouring band: some bands get 2 shots, some get none.
+    - A few random repeat shots make shots-per-band uneven between visits.
+    - `dropped_bands` (1-based) simulates bad or missing shots in this visit.
+    """
+    offset = 0.5 if half_band_shift else 0.0
+    eps = 1e-6
+    positions: List[float] = []
+    for _ in range(n_sweeps):
+        start = rng.randrange(n_bands)
+        for i in range(n_bands):
+            k = (start + i) % n_bands
+            p = k + 0.5 + offset + rng.uniform(-position_jitter, position_jitter)
+            positions.append(min(n_bands - eps, max(0.0, p)))
+    for _ in range(n_repeat_shots):
+        k = rng.randrange(n_bands)
+        p = k + 0.5 + offset + rng.uniform(-position_jitter, position_jitter)
+        positions.append(min(n_bands - eps, max(0.0, p)))
+    if dropped_bands:
+        positions = [p for p in positions if int(p) + 1 not in dropped_bands]
+    return positions
 
 def generate_simulated_target_visits(
     target_key: str,
@@ -86,9 +146,15 @@ def generate_simulated_target_visits(
     Generates realistic SPHEREx multi-epoch dataset for the specified target.
     Includes:
       - 4 survey visits spanning 18 months (May 2025 to Nov 2026)
-      - Dithered raw exposures with stepped LVF spectral channels
-      - Realistic LVF 20-30% color-shift brightness flicker on stationary stars
-      - Moving target displacement based on exact proper motion & parallax
+      - ~34-38 shots per visit: two sweeps across the 17 LVF bands plus random repeats,
+        so shots-per-band is uneven between visits
+      - Surveys 3-4 shifted by half a band; visit 2 is missing bands 6 and 13
+      - Each shot records the continuous wavelength at the target (`wavelength_um`);
+        the band label is left for Track 2 Step 1 to assign
+      - LVF flicker from each star's own blackbody colour (B_nu), not a fixed factor:
+        naive single-shot scatter is ~10-15% on average, up to ~20% for the reddest/bluest stars
+      - Deterministic: same target + detector always gives the same data
+      - Moving target displacement based on proper motion & parallax
       - Modeled ZODI background + detector noise
     """
     target = BENCHMARK_TARGETS.get(target_key, BENCHMARK_TARGETS["WISE 0855-0714"])
@@ -106,7 +172,9 @@ def generate_simulated_target_visits(
         {"mjd": 61365.0, "epoch_yr": 2026.89, "date": "2026-11-21 16:30:00 UTC", "pass": "Survey 4"}
     ][:n_visits]
 
-    field_stars = generate_stationary_field_stars(seed=42 + hash(target_key) % 1000, grid_size=grid_size, n_stars=24)
+    field_stars = generate_stationary_field_stars(
+        seed=42 + _stable_seed(target_key) % 1000, grid_size=grid_size, n_stars=24
+    )
     
     # Target starting position in stamp center
     u0 = grid_size / 2.0
@@ -164,52 +232,48 @@ def generate_simulated_target_visits(
         target_x_px = u0 + (target_dx_arcsec / SPHEREx_PIXEL_SCALE_ARCSEC)
         target_y_px = v0 + (target_dy_arcsec / SPHEREx_PIXEL_SCALE_ARCSEC)
         
-        # In a real SPHEREx survey pass, pointings step across spectral channels.
-        # Exposures within each visit sample channels 4, 5, 6, 7.
-        # Single exposures fluctuate by 20-30% due to LVF color slope;
-        # Akhilesh's Band-Balanced stacking equalizes them across C_shared.
+        # Plan where on the LVF the target lands in each shot of this visit.
+        # Surveys 3-4 are shifted by half a band; visit 2 loses two bands (bad shots).
+        visit_rng = random.Random(_stable_seed(target_key, detector, "visit", v_idx))
+        dropped = (6, 13) if v_idx == 1 else ()
+        shot_positions = plan_visit_shots(
+            visit_rng,
+            half_band_shift=(v_idx >= 2),
+            dropped_bands=dropped,
+        )
+        band_width = (det_lmax - det_lmin) / 17.0
+        noise_sigma = 0.35  # MJy/sr per pixel
         exposures = []
-        dithers = [
-            (0.0, 0.0, 4),
-            (0.4, -0.3, 5),
-            (-0.3, 0.5, 6),
-            (0.2, 0.4, 7)
-        ]
-        
-        for exp_idx, (dith_x, dith_y, channel_num) in enumerate(dithers):
-            ch_lambda, ch_bw = get_channel_wavelength(detector, channel_num)
-            
-            # Create base exposure image
+
+        for exp_idx, band_pos in enumerate(shot_positions):
+            # Exact wavelength the target is seen at in this shot (continuous, not a band centre)
+            shot_lambda = det_lmin + band_pos * band_width
+            dith_x = visit_rng.uniform(-0.5, 0.5)
+            dith_y = visit_rng.uniform(-0.5, 0.5)
+
             exp_img = [[0.0 for _ in range(grid_size)] for _ in range(grid_size)]
-            var_img = [[0.25 for _ in range(grid_size)] for _ in range(grid_size)]
+            var_img = [[noise_sigma ** 2 for _ in range(grid_size)] for _ in range(grid_size)]
             zodi_img = [[1.85 for _ in range(grid_size)] for _ in range(grid_size)]  # Zodiacal light ~1.8 MJy/sr
             flag_img = [[0 for _ in range(grid_size)] for _ in range(grid_size)]
-            
-            # 1. Add background noise + zodi
-            rng = random.Random(v_idx * 100 + exp_idx * 10)
+
+            # 1. Background: ZODI + detector noise
+            rng = random.Random(_stable_seed(target_key, detector, "exp", v_idx, exp_idx))
             for y in range(grid_size):
                 for x in range(grid_size):
-                    # Background noise sigma ~ 0.35 MJy/sr
-                    noise = rng.gauss(0.0, 0.35)
-                    exp_img[y][x] = zodi_img[y][x] + noise
-                    
-            # 2. Add stationary background stars (with LVF spectral slope flicker!)
+                    exp_img[y][x] = zodi_img[y][x] + rng.gauss(0.0, noise_sigma)
+
+            # 2. Stationary field stars. Their brightness follows their own blackbody colour at
+            #    the wavelength of this shot: this IS the LVF flicker (no fudge factor).
             for s in field_stars:
-                # The LVF color-shift phenomenon:
-                # A star observed at different channels exhibits a spectral slope variation of 20-30%!
-                slope = get_star_spectral_slope(ch_lambda, s["teff"])
-                # Raw flicker variation across dither channels (20-30% as documented in Section 1.1)
-                flicker_factor = 0.75 + 0.50 * (channel_num / 17.0) * (s["teff"] / 5000.0)
-                star_flux = s["base_flux"] * flicker_factor
-                add_psf_source(exp_img, s["x"] + dith_x, s["y"] + dith_y, star_flux)
+                colour = get_star_spectral_slope(shot_lambda, s["teff"], reference_um=det_mid)
+                add_psf_source(exp_img, s["x"] + dith_x, s["y"] + dith_y, s["base_flux"] * colour)
                 # Mark cataloged source in FLAGS (MP_SOURCE = 1 << 21)
                 flag_x = int(round(s["x"]))
                 flag_y = int(round(s["y"]))
                 if 0 <= flag_x < grid_size and 0 <= flag_y < grid_size:
                     flag_img[flag_y][flag_x] |= (1 << 21)
-                    
-            # 3. Add moving target
-            # For variable stars (RW Aur, R Dra), modulate flux over time
+
+            # 3. Target: intrinsic variability (RW Aur, R Dra) times its own colour at this wavelength
             current_target_flux = target_base_flux
             if target_id == "rw_aur":
                 # Dust occultation dimming
@@ -219,15 +283,15 @@ def generate_simulated_target_visits(
                 # Mira pulsation
                 phase = (v_def["mjd"] - 60000.0) / 245.6
                 current_target_flux *= (0.3 + 1.2 * math.cos(2.0 * math.pi * phase)**2)
-                
+            current_target_flux *= get_star_spectral_slope(shot_lambda, teff, reference_um=det_mid)
+
             add_psf_source(exp_img, target_x_px + dith_x, target_y_px + dith_y, current_target_flux)
-            # Mark target as source in flags
             tx = int(round(target_x_px))
             ty = int(round(target_y_px))
             if 0 <= tx < grid_size and 0 <= ty < grid_size:
                 flag_img[ty][tx] |= (1 << 21)
 
-            # 4. Inject few random bad pixels (hot pixel, cosmic ray)
+            # 4. A few hot pixels / cosmic rays per shot
             for _ in range(3):
                 bx = rng.randint(2, grid_size - 3)
                 by = rng.randint(2, grid_size - 3)
@@ -236,18 +300,20 @@ def generate_simulated_target_visits(
 
             exposures.append({
                 "exp_id": f"{target_id}_{detector}_v{v_idx+1}_exp{exp_idx+1}",
-                "mjd_mid": v_def["mjd"] + exp_idx * 0.05,
-                "wavelength_um": ch_lambda,
-                "bandwidth_um": ch_bw,
-                "channel": channel_num,
-                "dither_x": dith_x,
-                "dither_y": dith_y,
+                "mjd_mid": v_def["mjd"] + exp_idx * 0.02,
+                # Step 1 input: wavelength at the target. The band label is assigned by
+                # band_balancer.label_exposure_spectral_channel, not hard-coded here.
+                "wavelength_um": round(shot_lambda, 5),
+                "lambda_at_target": round(shot_lambda, 5),
+                "bandwidth_um": round(band_width, 5),
+                "dither_x": round(dith_x, 3),
+                "dither_y": round(dith_y, 3),
                 "image": exp_img,
                 "variance": var_img,
                 "zodi": zodi_img,
                 "flags": flag_img
             })
-            
+
         visits.append({
             "visit_id": f"V{v_idx + 1}",
             "visit_index": v_idx + 1,
