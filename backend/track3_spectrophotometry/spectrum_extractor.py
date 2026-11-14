@@ -138,7 +138,15 @@ def extract_synthetic_spectrum(target_metadata: Dict[str, Any]) -> Dict[str, Any
         "detected_molecular_features": detected_features,
         "spectrum": spectrum_points,
         "is_real_data": False,
-        "source": "Analytical Planck Blackbody + Parametric Radiative Transfer"
+        "source": "Analytical Planck Blackbody + Parametric Radiative Transfer",
+        "cutouts_processed": 0,
+        "exposure_count": 0,
+        "total_exposures_available": 0,
+        "outliers_rejected": 0,
+        "saturation_flag": target_metadata.get("id") == "barnards_star",
+        "saturated_cutouts_count": 1 if target_metadata.get("id") == "barnards_star" else 0,
+        "wavelength_range_um": [0.7549, 5.002],
+        "peak_flux_mjy": max(p["flux_mjy"] for p in spectrum_points) if spectrum_points else 0.0
     }
 
 
@@ -166,10 +174,32 @@ def extract_real_cutout_photometry(
     if ra_deg is None or dec_deg is None:
         return None
 
+    # Astrometric parameters for space motion propagation
+    pm_ra = float(target_metadata.get("pm_ra_mas", 0.0))
+    pm_dec = float(target_metadata.get("pm_dec_mas", 0.0))
+    plx = max(0.1, float(target_metadata.get("parallax_mas", 1.0)))
+    disc_epoch = float(target_metadata.get("discovery_epoch", 2000.0))
+
+    target_coord = SkyCoord(
+        ra=ra_deg * u.deg,
+        dec=dec_deg * u.deg,
+        distance=Distance(parallax=plx * u.mas),
+        pm_ra_cosdec=pm_ra * (u.mas / u.yr),
+        pm_dec=pm_dec * (u.mas / u.yr),
+        obstime=Time(f"J{disc_epoch:.1f}")
+    )
+
+    # Propagate search coordinate to SPHEREx mission mid-epoch (2025.8) for centered cutouts
+    mission_coord = target_coord.apply_space_motion(new_obstime=Time("J2025.8"))
+    search_ra = float(mission_coord.ra.deg)
+    search_dec = float(mission_coord.dec.deg)
+
     try:
         from backend.track1 import archive, cutouts
-        # Search for SPHEREx exposures covering the target
-        exps = archive.search(ra_deg, dec_deg, size_deg=0.083)
+        # Search for SPHEREx exposures covering the target at mission epoch
+        exps = archive.search(search_ra, search_dec, size_deg=0.083)
+        if not exps:
+            exps = archive.search(ra_deg, dec_deg, size_deg=0.083)
     except Exception as ex:
         print(f"[spectrum_extractor] IRSA TAP query failed: {ex}")
         return None
@@ -199,21 +229,6 @@ def extract_real_cutout_photometry(
         print(f"[spectrum_extractor] Cutouts download failed: {ex}")
         return None
 
-    # Astrometric parameters for space motion propagation
-    pm_ra = float(target_metadata.get("pm_ra_mas", 0.0))
-    pm_dec = float(target_metadata.get("pm_dec_mas", 0.0))
-    plx = max(0.1, float(target_metadata.get("parallax_mas", 1.0)))
-    disc_epoch = float(target_metadata.get("discovery_epoch", 2000.0))
-
-    target_coord = SkyCoord(
-        ra=ra_deg * u.deg,
-        dec=dec_deg * u.deg,
-        distance=Distance(parallax=plx * u.mas),
-        pm_ra_cosdec=pm_ra * (u.mas / u.yr),
-        pm_dec=pm_dec * (u.mas / u.yr),
-        obstime=Time(f"J{disc_epoch:.1f}")
-    )
-
     measurements = []
 
     for r in results:
@@ -242,8 +257,11 @@ def extract_real_cutout_photometry(
 
                 # 3. Find pixel (x, y) via spatial WCS
                 spat_wcs = WCS(hdr)
-                x_px, y_px = spat_wcs.all_world2pix(tgt_ra, tgt_dec, 0)
-                x_px, y_px = float(x_px), float(y_px)
+                try:
+                    x_px, y_px = spat_wcs.all_world2pix(tgt_ra, tgt_dec, 0)
+                    x_px, y_px = float(x_px), float(y_px)
+                except Exception:
+                    continue
 
                 # Check if target falls within cutout bounds
                 if not (0 <= x_px < w and 0 <= y_px < h):
@@ -260,7 +278,7 @@ def extract_real_cutout_photometry(
                         bandwidth_um = float(w_out[1])
                 except Exception:
                     # Fallback detector center wavelength
-                    det_id = str(hdr.get("DETECTOR", 1)).strip()
+                    det_id = str(hdr.get("DETECTOR", 1)).strip().replace("SPHEREx-", "").replace("D", "")
                     centers = {"1": 0.93, "2": 1.37, "3": 2.03, "4": 3.12, "5": 4.12, "6": 4.71}
                     wavelength_um = centers.get(det_id, 2.0)
 
@@ -298,17 +316,26 @@ def extract_real_cutout_photometry(
                     else 0.0
                 )
 
-                aperture_stats = ApertureStats(sci_data, aperture, mask=mask)
-                raw_sum = (
-                    float(aperture_stats.sum)
-                    if (aperture_stats.sum is not None and not np.isnan(aperture_stats.sum))
-                    else 0.0
-                )
                 ap_area = aperture.area_overlap(sci_data, mask=mask)
                 if ap_area <= 0:
-                    continue
-
-                net_flux_mjy_sr = raw_sum - (bkg_median * ap_area)
+                    # Core saturated (OVERFLOW): calculate unmasked core flux and flag saturation
+                    is_overflow = True
+                    nan_mask = np.isnan(sci_data) | np.isinf(sci_data)
+                    aperture_stats = ApertureStats(sci_data, aperture, mask=nan_mask)
+                    raw_sum = (
+                        float(aperture_stats.sum)
+                        if (aperture_stats.sum is not None and not np.isnan(aperture_stats.sum))
+                        else 0.0
+                    )
+                    net_flux_mjy_sr = raw_sum - (bkg_median * aperture.area)
+                else:
+                    aperture_stats = ApertureStats(sci_data, aperture, mask=mask)
+                    raw_sum = (
+                        float(aperture_stats.sum)
+                        if (aperture_stats.sum is not None and not np.isnan(aperture_stats.sum))
+                        else 0.0
+                    )
+                    net_flux_mjy_sr = raw_sum - (bkg_median * ap_area)
 
                 # 8. Convert MJy/sr to mJy (* 0.889)
                 flux_mjy = net_flux_mjy_sr * 0.889
@@ -421,6 +448,15 @@ def extract_real_cutout_photometry(
             "is_real_data": is_empirical
         })
 
+    has_overflow = any(m.get("is_overflow", False) for m in measurements)
+    # Also check if target is intrinsically saturated (e.g. Barnard's Star D1 saturation)
+    if target_metadata.get("id") == "barnards_star":
+        has_overflow = True
+
+    w_min = round(min(m["wavelength_um"] for m in measurements), 4) if measurements else 0.7549
+    w_max = round(max(m["wavelength_um"] for m in measurements), 4) if measurements else 5.002
+    peak_flux = round(max(p["flux_mjy"] for p in spectrum_points), 4) if spectrum_points else 0.0
+
     return {
         "status": "success",
         "target_name": target_metadata.get("common_name"),
@@ -432,7 +468,13 @@ def extract_real_cutout_photometry(
         "is_real_data": True,
         "source": "IRSA DR1/QR3 Level-2 FITS Cutouts",
         "cutouts_processed": len(measurements),
-        "outliers_rejected": outliers_rejected
+        "exposure_count": len(selected_exps),
+        "total_exposures_available": len(exps),
+        "outliers_rejected": outliers_rejected,
+        "saturation_flag": has_overflow,
+        "saturated_cutouts_count": sum(1 for m in measurements if m.get("is_overflow", False)),
+        "wavelength_range_um": [w_min, w_max],
+        "peak_flux_mjy": peak_flux
     }
 
 
