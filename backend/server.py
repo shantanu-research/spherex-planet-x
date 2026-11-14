@@ -206,9 +206,10 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 6: 102-Channel Spectrophotometry Array (Section 9.2)
         # -------------------------------------------------------------
         if path == "/api/spectrum":
-            target_q = query.get("q", ["WISE 0855-0714"])[0]
+            target_q = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
+            source_mode = query.get("source", ["auto"])[0].lower()
             target = get_target_by_query(target_q)
-            spectrum_data = extract_102_channel_spectrum(target)
+            spectrum_data = extract_102_channel_spectrum(target, source_mode=source_mode)
             self._send_json(spectrum_data)
             return
 
