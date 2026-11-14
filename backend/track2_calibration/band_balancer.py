@@ -26,6 +26,108 @@ def get_channel_wavelength(detector: str, channel_idx: int) -> Tuple[float, floa
     lc = lmin + (channel_idx - 0.5) * step
     return round(lc, 4), round(step, 4)
 
+def register_shot(
+    image: List[List[Optional[float]]],
+    variance: Optional[List[List[float]]],
+    shift_x: float,
+    shift_y: float,
+) -> Tuple[List[List[Optional[float]]], Optional[List[List[Optional[float]]]]]:
+    """
+    Level 0: align one shot onto the visit's common pixel grid.
+
+    A shot whose pointing is offset by (shift_x, shift_y) pixels shows a sky source at
+    (x + shift_x, y + shift_y). Resampling out(x, y) = in(x + shift_x, y + shift_y) with
+    bilinear interpolation puts every shot on the same grid before co-adding, so a star's
+    light falls in the same pixels in every visit stack.
+
+    Masked (None) neighbours are skipped and the weights renormalised; pixels with no
+    valid neighbours (or that fall off the image) become None.
+    Variance is propagated as sum(w * var), which keeps aperture-sum errors right
+    (interpolation correlates neighbouring pixels, so per-pixel sum(w^2 * var) would
+    understate the noise of any sum over several pixels).
+    """
+    height = len(image)
+    width = len(image[0]) if height else 0
+    if abs(shift_x) < 1e-9 and abs(shift_y) < 1e-9:
+        return image, variance
+
+    # The shift is the same for every pixel, so the four bilinear weights are constants.
+    ix, iy = int(math.floor(shift_x)), int(math.floor(shift_y))
+    fx, fy = shift_x - ix, shift_y - iy
+    taps = [
+        (iy, ix, (1.0 - fx) * (1.0 - fy)),
+        (iy, ix + 1, fx * (1.0 - fy)),
+        (iy + 1, ix, (1.0 - fx) * fy),
+        (iy + 1, ix + 1, fx * fy),
+    ]
+    taps = [t for t in taps if t[2] > 0.0]
+    nan_free = all(
+        v is not None and not (isinstance(v, float) and math.isnan(v)) for row in image for v in row
+    )
+
+    out: List[List[Optional[float]]] = []
+    out_var: Optional[List[List[Optional[float]]]] = [] if variance is not None else None
+    for y in range(height):
+        rows = [(image[y + dy] if 0 <= y + dy < height else None, dx, w) for dy, dx, w in taps]
+        vrows = (
+            [(variance[y + dy] if 0 <= y + dy < height else None) for dy, _, _ in taps]
+            if variance is not None else None
+        )
+        o_row: List[Optional[float]] = [None] * width
+        v_row: List[Optional[float]] = [None] * width
+        for x in range(width):
+            acc = acc_var = w_sum = 0.0
+            for k, (row, dx, w) in enumerate(rows):
+                xx = x + dx
+                if row is None or not (0 <= xx < width):
+                    continue
+                val = row[xx]
+                if not nan_free and (val is None or (isinstance(val, float) and math.isnan(val))):
+                    continue
+                acc += w * val
+                if vrows is not None:
+                    acc_var += w * vrows[k][xx]
+                w_sum += w
+            if w_sum > 0.5:  # need at least half the interpolation weight to be real data
+                o_row[x] = acc / w_sum
+                v_row[x] = acc_var / w_sum
+        out.append(o_row)
+        if out_var is not None:
+            out_var.append(v_row)
+    return out, out_var
+
+
+def fill_missing_bands(
+    vals: List[float], wts: List[float]
+) -> Optional[Tuple[List[float], List[float], bool]]:
+    """
+    One pixel, one value per band (in band order) with its Level-1 weight (0 = no data).
+    Bands with no data are interpolated from the nearest valid bands below and above, so
+    every band keeps its equal vote. Returns (vals, wts, was_filled) or None if no band
+    has data.
+    """
+    valid = [i for i, w in enumerate(wts) if w > 0.0]
+    if not valid:
+        return None
+    if len(valid) == len(wts):
+        return vals, wts, False
+    vals, wts = list(vals), list(wts)
+    for i in range(len(wts)):
+        if wts[i] > 0.0:
+            continue
+        lo = max((j for j in valid if j < i), default=None)
+        hi = min((j for j in valid if j > i), default=None)
+        if lo is not None and hi is not None:
+            f = (i - lo) / (hi - lo)
+            vals[i] = vals[lo] * (1.0 - f) + vals[hi] * f
+            wts[i] = 1.0 / ((1.0 - f) / wts[lo] + f / wts[hi])
+        else:
+            j = lo if lo is not None else hi
+            vals[i] = vals[j]
+            wts[i] = wts[j]
+    return vals, wts, True
+
+
 def label_exposure_spectral_channel(detector: str, target_wavelength_um: float) -> int:
     """
     Step 1: Spectral Labelling
@@ -42,7 +144,9 @@ def label_exposure_spectral_channel(detector: str, target_wavelength_um: float) 
 
 def perform_band_balanced_stacking(
     visits_exposures: List[Dict[str, Any]],
-    detector: str
+    detector: str,
+    use_cleaned: bool = True,
+    register: bool = True,
 ) -> Dict[str, Any]:
     """
     Akhilesh's 5-Step Hierarchical Band-Balanced Stacking:
@@ -54,6 +158,21 @@ def perform_band_balanced_stacking(
     3. Cross-Visit Shared-Channel Intersection C_shared = Intersect_v { b : E_v,d,b != empty }
     4. Sub-band & matched-band aggregation
     5. Photometric reliability audit and gate (< 10 bands -> warning)
+
+    Input images: each exposure's `cleaned_image` (flags masked to None, ZODI and
+    background removed, see cleaning.clean_frame_data) is used when present and
+    `use_cleaned` is True; otherwise the raw `image`.
+
+    Alignment (Level 0): when `register` is True, each shot is first resampled onto
+    the visit's common grid using its pointing offset (`dither_x`, `dither_y` in pixels;
+    for real data this comes from each shot's WCS). Without this, the ~0.5 px pointing
+    jitter between shots smears stars differently in each visit, which leaves a ~1%
+    fake brightness change even after band balancing.
+
+    Masked pixels: a masked pixel simply drops out of its band's Level-1 average.
+    If EVERY shot of a shared band is masked at a pixel, that band's value there is
+    interpolated from the nearest valid shared bands, so the equal band mix is kept
+    (counted in `n_band_filled_pixels`). Only if no band is valid is the pixel None.
     """
     n_visits = len(visits_exposures)
     if n_visits == 0:
@@ -132,15 +251,25 @@ def perform_band_balanced_stacking(
             ch_wt_sum = [[0.0 for _ in range(width)] for _ in range(height)]
             
             for exp in bucket_exps:
-                img = exp["image"]
+                img = exp.get("cleaned_image") if use_cleaned else None
+                if img is None:
+                    img = exp["image"]
                 var = exp.get("variance")
+                if register:
+                    cache_key = "registered_cleaned" if img is exp.get("cleaned_image") else "registered_raw"
+                    if cache_key not in exp:
+                        exp[cache_key] = register_shot(
+                            img, var, float(exp.get("dither_x", 0.0)), float(exp.get("dither_y", 0.0))
+                        )
+                    img, var = exp[cache_key]
                 for y in range(height):
                     for x in range(width):
                         val = img[y][x]
                         if val is None or math.isnan(val):
                             continue
                         # Inverse variance weighting w = 1 / sigma^2
-                        wt = (1.0 / var[y][x]) if (var and var[y][x] > 0.0) else 1.0
+                        v_pix = var[y][x] if var else None
+                        wt = (1.0 / v_pix) if (v_pix is not None and v_pix > 0.0) else 1.0
                         ch_sum[y][x] += val * wt
                         ch_wt_sum[y][x] += wt
                         
@@ -164,16 +293,29 @@ def perform_band_balanced_stacking(
         level2_variance = [[0.0 for _ in range(width)] for _ in range(height)]
         inv_n_shared = 1.0 / max(1, n_shared)
         
+        # Masked pixels: if every shot of a band is masked at a pixel, fill that band's
+        # value there by interpolating between the nearest valid shared bands below and
+        # above (spectra are smooth across neighbouring bands). This keeps one equal vote
+        # per band, which the PDF's nanmean-over-remaining-bands would not.
+        n_band_filled_pixels = 0
+        n_incomplete_pixels = 0
+
         for y in range(height):
             for x in range(width):
-                pixel_sum = 0.0
-                var_sum = 0.0
-                for ch in c_shared_sorted:
-                    pixel_sum += level1_channel_images[ch][y][x]
-                    wt = level1_channel_weights[ch][y][x]
-                    var_sum += (1.0 / wt) if wt > 0.0 else 1.0
-                level2_stack[y][x] = pixel_sum * inv_n_shared
-                level2_variance[y][x] = var_sum * (inv_n_shared ** 2)
+                filled = fill_missing_bands(
+                    [level1_channel_images[ch][y][x] for ch in c_shared_sorted],
+                    [level1_channel_weights[ch][y][x] for ch in c_shared_sorted],
+                )
+                if filled is None:
+                    level2_stack[y][x] = None
+                    level2_variance[y][x] = None
+                    n_incomplete_pixels += 1
+                    continue
+                vals, wts, was_filled = filled
+                if was_filled:
+                    n_band_filled_pixels += 1
+                level2_stack[y][x] = sum(vals) * inv_n_shared
+                level2_variance[y][x] = sum(1.0 / w for w in wts) * (inv_n_shared ** 2)
 
         # Step 4: Sub-band grouping (4 contiguous bins)
         sub_bands = []
@@ -186,7 +328,11 @@ def perform_band_balanced_stacking(
                 sub_img = [[0.0 for _ in range(width)] for _ in range(height)]
                 for y in range(height):
                     for x in range(width):
-                        sub_img[y][x] = sum(level1_channel_images[ch][y][x] for ch in bin_channels) / len(bin_channels)
+                        filled = fill_missing_bands(
+                            [level1_channel_images[ch][y][x] for ch in bin_channels],
+                            [level1_channel_weights[ch][y][x] for ch in bin_channels],
+                        )
+                        sub_img[y][x] = None if filled is None else sum(filled[0]) / len(bin_channels)
                 sub_bands.append({
                     "sub_band_bin": b_idx,
                     "channels": bin_channels,
@@ -201,6 +347,12 @@ def perform_band_balanced_stacking(
             "survey_pass": visit["survey_pass"],
             "stacked_image": level2_stack,
             "stacked_variance": level2_variance,
+            "n_band_filled_pixels": n_band_filled_pixels,
+            "n_masked_pixels": n_incomplete_pixels,
+            "registered_shots": register,
+            "used_cleaned_images": use_cleaned and any(
+                e.get("cleaned_image") is not None for e in visit["exposures"]
+            ),
             "sub_bands": sub_bands
         })
 

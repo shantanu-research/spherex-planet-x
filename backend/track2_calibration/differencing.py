@@ -55,7 +55,9 @@ def compute_difference_frames(
         diff_img = [[0.0 for _ in range(width)] for _ in range(height)]
         for y in range(height):
             for x in range(width):
-                diff_img[y][x] = img[y][x] - template[y][x]
+                pix = img[y][x]
+                # Masked (None) pixels stay masked in the difference image
+                diff_img[y][x] = None if pix is None else pix - template[y][x]
                 
         diff_stacks.append({
             "visit_id": v["visit_id"],
@@ -100,7 +102,10 @@ def perform_shift_and_stack(
                 src_x = int(round(x - dx))
                 src_y = int(round(y - dy))
                 if 0 <= src_x < width and 0 <= src_y < height:
-                    shifted_sum[y][x] += img[src_y][src_x]
+                    pix = img[src_y][src_x]
+                    if pix is None:
+                        continue  # masked pixel: skip, other visits still contribute
+                    shifted_sum[y][x] += pix
                     shifted_count[y][x] += 1
                     
     result = [[0.0 for _ in range(width)] for _ in range(height)]

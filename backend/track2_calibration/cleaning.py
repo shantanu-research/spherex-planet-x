@@ -120,3 +120,28 @@ def clean_frame_data(
     }
 
     return cleaned_image, weights, stats
+
+
+def clean_visit_exposures(
+    visits: List[Dict[str, Any]],
+    flag_map: Dict[str, int] = None,
+) -> Dict[str, Any]:
+    """
+    Runs clean_frame_data on every exposure of every visit, in place.
+
+    Each exposure gains `cleaned_image` (hazard pixels = None, ZODI and background
+    pedestal removed) and `cleaned_weight`. Band-balanced stacking then uses these.
+    Returns a small summary (exposures cleaned, pixels masked).
+    """
+    n_exposures = 0
+    n_masked = 0
+    for visit in visits:
+        for exp in visit.get("exposures", []):
+            clean_img, clean_wt, stats = clean_frame_data(
+                exp["image"], exp["flags"], exp.get("variance"), exp.get("zodi"), flag_map
+            )
+            exp["cleaned_image"] = clean_img
+            exp["cleaned_weight"] = clean_wt
+            n_exposures += 1
+            n_masked += stats.get("masked_pixels", 0)
+    return {"n_exposures_cleaned": n_exposures, "n_pixels_masked": n_masked}
