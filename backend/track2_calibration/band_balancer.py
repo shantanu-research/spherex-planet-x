@@ -16,6 +16,26 @@ DETECTOR_SPECS = {
     "D6": {"name": "SPHEREx-D6", "lmin": 4.412, "lmax": 5.002, "R": 128, "dichroic_pair": "D3"}
 }
 
+N_BANDS = 17
+# PDF Step 3: fewer shared bands than this -> comparison marked unreliable
+MIN_SHARED_BANDS = 10
+# PDF Step 4: sub-band stacks group about this many neighbouring bands
+SUB_BAND_SIZE = 4
+
+
+def split_into_sub_bands(bands: List[int], size: int = SUB_BAND_SIZE) -> List[List[int]]:
+    """Splits sorted bands into round(n/size) contiguous groups of near-equal size (~size each)."""
+    n = len(bands)
+    if n == 0:
+        return []
+    n_groups = max(1, int(round(n / float(size))))
+    groups, start = [], 0
+    for g in range(n_groups):
+        stop = start + (n - start) // (n_groups - g)
+        groups.append(bands[start:stop])
+        start = stop
+    return [grp for grp in groups if grp]
+
 def get_channel_wavelength(detector: str, channel_idx: int) -> Tuple[float, float]:
     """
     Returns (lambda_central_um, delta_lambda_um) for channel_idx in 1..17.
@@ -188,42 +208,47 @@ def perform_band_balanced_stacking(
         channel_buckets: Dict[int, List[Dict[str, Any]]] = {b: [] for b in range(1, 18)}
         
         for exp in exps:
-            # Get or assign spectral channel
+            # Step 1: every shot carries lambda_at_target and band (manifest fields)
+            lam = exp.get("lambda_at_target", exp.get("wavelength_um"))
             ch = exp.get("channel")
             if ch is None:
-                ch = label_exposure_spectral_channel(detector, exp.get("wavelength_um", DETECTOR_SPECS[detector]["lmin"]))
+                ch = label_exposure_spectral_channel(detector, lam if lam is not None else DETECTOR_SPECS[detector]["lmin"])
                 exp["channel"] = ch
+            exp["band"] = ch
+            if lam is not None:
+                exp["lambda_at_target"] = lam
             channels_present.add(ch)
             channel_buckets[ch].append(exp)
             
         visit_channel_sets.append(channels_present)
         visit_channel_cubes.append(channel_buckets)
 
-    # Step 3: Compute cross-visit shared channel intersection C_shared
+    # Step 3: bands shared by every visit. All visits are stacked from exactly these
+    # bands so the colour mix is identical. There is no fallback to "all bands": if few
+    # or no bands are shared, the comparison is marked unreliable instead (PDF Step 3).
     c_shared = set(range(1, 18))
     for c_set in visit_channel_sets:
         c_shared = c_shared.intersection(c_set)
-        
-    # If intersection is empty or tiny, fallback to union or most common
-    fallback_used = False
-    if len(c_shared) == 0:
-        fallback_used = True
-        c_shared = set().union(*visit_channel_sets)
-
-    c_shared_sorted = sorted(list(c_shared))
+    c_shared_sorted = sorted(c_shared)
     n_shared = len(c_shared_sorted)
-    
-    # Calculate effective wavelength of the stack
-    wavelengths = [get_channel_wavelength(detector, b)[0] for b in c_shared_sorted]
-    eff_wavelength = sum(wavelengths) / max(1, n_shared) if wavelengths else 0.0
+    no_shared_bands = n_shared == 0
 
-    # Reliability gate
-    reliable = n_shared >= 10
+    # Effective wavelength of the shared mix (average of the band centres that went in)
+    wavelengths = [get_channel_wavelength(detector, b)[0] for b in c_shared_sorted]
+    eff_wavelength = sum(wavelengths) / n_shared if n_shared else None
+
+    # Reliability gate: fewer than MIN_SHARED_BANDS shared bands -> not comparable
+    reliable = n_shared >= MIN_SHARED_BANDS
     reliability_warning = None
-    if not reliable:
+    if no_shared_bands:
         reliability_warning = (
-            f"RELIABILITY WARNING: Only {n_shared} shared spectral channels intersect across visits "
-            f"(< 10 channels threshold). Intrinsic stellar color slope may cause residual flicker!"
+            "NOT COMPARABLE: the visits share no spectral bands, so each visit is stacked from "
+            "its own bands and brightness differences between visits may be colour effects."
+        )
+    elif not reliable:
+        reliability_warning = (
+            f"UNRELIABLE: only {n_shared} of 17 bands are shared by every visit "
+            f"(need {MIN_SHARED_BANDS}). Brightness changes between visits may be colour effects."
         )
 
     # Perform Two-Level Stacking for each visit
@@ -231,6 +256,10 @@ def perform_band_balanced_stacking(
     
     for v_idx, visit in enumerate(visits_exposures):
         channel_buckets = visit_channel_cubes[v_idx]
+        # Normally the shared bands; with no shared bands at all each visit uses its own
+        # (and the result is flagged not comparable above).
+        bands_used = c_shared_sorted if not no_shared_bands else sorted(visit_channel_sets[v_idx])
+        n_bands_used = len(bands_used)
         
         # Get frame dimensions from first available exposure
         sample_frame = visit["exposures"][0]["image"]
@@ -241,12 +270,9 @@ def perform_band_balanced_stacking(
         level1_channel_images: Dict[int, List[List[float]]] = {}
         level1_channel_weights: Dict[int, List[List[float]]] = {}
         
-        for ch in c_shared_sorted:
+        for ch in bands_used:
             bucket_exps = channel_buckets.get(ch, [])
-            if not bucket_exps:
-                # If exposure missing in this visit but present in others, borrow nearest dither
-                bucket_exps = visit["exposures"]
-                
+
             ch_sum = [[0.0 for _ in range(width)] for _ in range(height)]
             ch_wt_sum = [[0.0 for _ in range(width)] for _ in range(height)]
             
@@ -291,7 +317,7 @@ def perform_band_balanced_stacking(
         # One equal vote per channel, regardless of how many raw exposures were in each channel!
         level2_stack = [[0.0 for _ in range(width)] for _ in range(height)]
         level2_variance = [[0.0 for _ in range(width)] for _ in range(height)]
-        inv_n_shared = 1.0 / max(1, n_shared)
+        inv_n_shared = 1.0 / max(1, n_bands_used)
         
         # Masked pixels: if every shot of a band is masked at a pixel, fill that band's
         # value there by interpolating between the nearest valid shared bands below and
@@ -303,8 +329,8 @@ def perform_band_balanced_stacking(
         for y in range(height):
             for x in range(width):
                 filled = fill_missing_bands(
-                    [level1_channel_images[ch][y][x] for ch in c_shared_sorted],
-                    [level1_channel_weights[ch][y][x] for ch in c_shared_sorted],
+                    [level1_channel_images[ch][y][x] for ch in bands_used],
+                    [level1_channel_weights[ch][y][x] for ch in bands_used],
                 )
                 if filled is None:
                     level2_stack[y][x] = None
@@ -317,13 +343,9 @@ def perform_band_balanced_stacking(
                 level2_stack[y][x] = sum(vals) * inv_n_shared
                 level2_variance[y][x] = sum(1.0 / w for w in wts) * (inv_n_shared ** 2)
 
-        # Step 4: Sub-band grouping (4 contiguous bins)
+        # Step 4: sub-band stacks, groups of ~4 neighbouring bands (equal vote per band inside)
         sub_bands = []
-        bin_size = max(1, n_shared // 4)
-        for b_idx in range(4):
-            bin_channels = c_shared_sorted[b_idx * bin_size : (b_idx + 1) * bin_size]
-            if not bin_channels and b_idx == 3:
-                bin_channels = c_shared_sorted[3 * bin_size :]
+        for b_idx, bin_channels in enumerate(split_into_sub_bands(bands_used)):
             if bin_channels:
                 sub_img = [[0.0 for _ in range(width)] for _ in range(height)]
                 for y in range(height):
@@ -333,14 +355,43 @@ def perform_band_balanced_stacking(
                             [level1_channel_weights[ch][y][x] for ch in bin_channels],
                         )
                         sub_img[y][x] = None if filled is None else sum(filled[0]) / len(bin_channels)
+                sub_wl = [get_channel_wavelength(detector, b)[0] for b in bin_channels]
                 sub_bands.append({
                     "sub_band_bin": b_idx,
                     "channels": bin_channels,
+                    "lambda_eff_um": round(sum(sub_wl) / len(sub_wl), 4),
                     "image": sub_img
                 })
 
+        # Manifest fields for this stack (agreed with Tracks 3 and 4)
+        n_shots_per_band = {b: len(channel_buckets.get(b, [])) for b in bands_used}
+        bands_present = sorted(visit_channel_sets[v_idx])
+        lam_eff = (
+            sum(get_channel_wavelength(detector, b)[0] for b in bands_used) / n_bands_used
+            if n_bands_used else None
+        )
+        # Same mix, but from where the target actually landed in each shot (equal weight per
+        # band, averaged within band): shows any within-band offset, e.g. surveys 3-4.
+        measured = []
+        for b in bands_used:
+            lams = [e["lambda_at_target"] for e in channel_buckets.get(b, []) if e.get("lambda_at_target") is not None]
+            if lams:
+                measured.append(sum(lams) / len(lams))
+        lam_eff_measured = sum(measured) / len(measured) if len(measured) == n_bands_used and measured else None
+
         visit_stacks.append({
             "visit_id": visit["visit_id"],
+            "detector": detector,
+            "bands_used": list(bands_used),
+            "n_bands": n_bands_used,
+            "n_shots_per_band": n_shots_per_band,
+            "lambda_eff": round(lam_eff, 4) if lam_eff is not None else None,
+            "lambda_eff_measured": round(lam_eff_measured, 4) if lam_eff_measured is not None else None,
+            "comparable": reliable,
+            "bands_present": bands_present,
+            "n_bands_present": len(bands_present),
+            "n_shots": len(visit.get("exposures", [])),
+            "n_shots_used": sum(n_shots_per_band.values()),
             "visit_index": visit["visit_index"],
             "mjd_mid": visit["mjd_mid"],
             "date_utc": visit["date_utc"],
@@ -361,9 +412,9 @@ def perform_band_balanced_stacking(
         "detector": detector,
         "n_shared_channels": n_shared,
         "shared_channels": c_shared_sorted,
-        "effective_wavelength_um": round(eff_wavelength, 4),
+        "effective_wavelength_um": round(eff_wavelength, 4) if eff_wavelength is not None else None,
         "comparable": reliable,
-        "fallback_used": fallback_used,
+        "min_shared_bands": MIN_SHARED_BANDS,
         "reliability_warning": reliability_warning,
         "visit_stacks": visit_stacks
     }
