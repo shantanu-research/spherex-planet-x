@@ -1,0 +1,37 @@
+== 1. SPHEREx collections ==
+   collection   
+----------------
+     spherex_dr1
+spherex_dr1_cube
+spherex_dr1_deep
+     spherex_qr3
+spherex_qr3_deep
+
+== 2. Columns in spherex.plane ==
+   obsid, planeid, productid, creatorid, metarelease, datarelease, calibrationlevel, dataproducttype, quality_flag, metrics_sourcenumberdensity, metrics_background, metrics_backgroundstddev, metrics_fluxdensitylimit, metrics_maglimit, position_dimension_naxis1, position_dimension_naxis2, position_resolution, position_samplesize, position_timedependent, energy_bounds_lower, energy_bounds_upper, energy_bounds_samples, energy_emband, energy_dimension, energy_resolvingpower, energy_samplesize, energy_bandpassname, energy_transition_species, energy_transition_transition, energy_restwav, time_bounds_lower, time_bounds_upper, time_bounds_samples, time_dimension, time_resolution, time_samplesize, time_exposure, polarization_states, polarization_dimension, provenance_name, provenance_reference, provenance_version, provenance_project, provenance_producer, provenance_runid, provenance_lastexecuted, provenance_keywords, ipac_gid, mission_id, poly, pt, ipac_pub_date, lastmodified, obs_publisher_did
+
+== 3. Exposures at RA=210.80227, Dec=54.34895 ==
+  376 exposures in 72.6 s
+  visit 0: 122 exposures, 2025-05-09 -> 2025-06-06, ['SPHEREx-D1', 'SPHEREx-D2', 'SPHEREx-D3', 'SPHEREx-D4', 'SPHEREx-D5', 'SPHEREx-D6']
+  visit 1: 124 exposures, 2025-12-01 -> 2025-12-18, ['SPHEREx-D1', 'SPHEREx-D2', 'SPHEREx-D3', 'SPHEREx-D4', 'SPHEREx-D5', 'SPHEREx-D6']
+  visit 2: 130 exposures, 2026-05-17 -> 2026-06-24, ['SPHEREx-D1', 'SPHEREx-D2', 'SPHEREx-D3', 'SPHEREx-D4', 'SPHEREx-D5', 'SPHEREx-D6']
+   2025-05-09T03:33:55.152 SPHEREx-D3 dr1 https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W19_2B/l2b-v27-2026-198/3/level2_2025W19_2B_0101 ...
+   2025-05-09T03:33:55.152 SPHEREx-D6 dr1 https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W19_2B/l2b-v27-2026-198/6/level2_2025W19_2B_0101 ...
+   2025-05-09T03:36:04.061 SPHEREx-D3 dr1 https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W19_2B/l2b-v27-2026-198/3/level2_2025W19_2B_0101 ...
+
+== 4. Download 3 cutouts ==
+  done in 12.6 s: [('effd176d44ec4124cf0ca9b3c299d38095fa4448.fits', None), ('22e969e403666ec0b360b5e1d9e17c61de7a68f0.fits', None), ('ea73a89a7fd51a728ad4837dc6a6d9bba5b22cae.fits', None)]
+  file size: 4.07 MB
+Filename: C:\SPHEREx\cache\cutouts\effd176d44ec4124cf0ca9b3c299d38095fa4448.fits
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU       5   ()      
+  1  IMAGE         1 ImageHDU       276   (48, 49)   float32   
+  2  FLAGS         1 ImageHDU       185   (48, 49)   int32   
+  3  VARIANCE      1 ImageHDU       119   (48, 49)   float32   
+  4  ZODI          1 ImageHDU       122   (48, 49)   float32   
+  5  EPSF          1 BinTableHDU     55   451R x 11C   [J, J, E, E, E, E, J, E, E, E, 1089D]   
+  6  WCS-WAVE      1 BinTableHDU     22   1R x 3C   [9J, 14J, 252E]   
+
+Headers saved to C:\SPHEREx\notes\real_header.txt
+
+All good if you see exposures, visits and a downloaded file above.

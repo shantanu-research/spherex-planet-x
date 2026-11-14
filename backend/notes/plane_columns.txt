@@ -1,0 +1,54 @@
+obsid: foreign key: caom.observation.obsid
+planeid: unique plane identifier: 32-bit UUID
+productid: name of this product
+creatorid: unique creator identifier for this product
+metarelease: date the metadata for a plane is public (UTC)
+datarelease: public release date
+calibrationlevel: IVOA ObsCore calibration level   (-1,0,1,2,3,4)
+dataproducttype: IVOA ObsCore data product type + extensions
+quality_flag: flag describing the data quality
+metrics_sourcenumberdensity: number density of sources
+metrics_background: background intensity
+metrics_backgroundstddev: standard deviation in background
+metrics_fluxdensitylimit: flux density limit where S:N=5 for point source
+metrics_maglimit: AB magnitude limit where S:N=5 for point source
+position_dimension_naxis1: dimensions (number of pixels) along one spatial axis
+position_dimension_naxis2: dimensions (number of pixels) along other spatial axis
+position_resolution: median spatial resolution (FWHM)
+position_samplesize: median sample (pixel) size on spatial axes
+position_timedependent: flag indicating that the position is time-dependent (0=false, 1=true)
+energy_bounds_lower: lower bound on energy axis (barycentric wavelength)
+energy_bounds_upper: upper bound on energy axis (barycentric wavelength)
+energy_bounds_samples: detailed energy coverage (barycentric wavelength)
+energy_emband: comma-separated energy band names (e.g. Infrared, Optical)
+energy_dimension: dimension (number of pixels) along energy axis
+energy_resolvingpower: median spectral resolving power (R)
+energy_samplesize: median sample (pixel) size on energy axis
+energy_bandpassname: collection-specific name for energy band (e.g. filter name)
+energy_transition_species: atom or molecule
+energy_transition_transition: specific energy transition of species
+energy_restwav: rest wavelength of target spectral feature (barycentric)
+time_bounds_lower: lower bound on time axis (Modified Julian Day)
+time_bounds_upper: upper bound on time axis (Modified Julian Day)
+time_bounds_samples: detailed time coverage (Modified Julian Day)
+time_dimension: dimension (number of pixels) along time axis
+time_resolution: median resolution on the time axis
+time_samplesize: median sample (pixel) size on time axis
+time_exposure: median exposure time per pixel
+polarization_states: polarization letter codes - not populated at IRSA
+polarization_dimension: number of samples (pixels) along polarization axis
+provenance_name: name of the process that created this plane
+provenance_reference: external reference (URL)
+provenance_version: version of the process/software
+provenance_project: responsible entity (e.g. person)
+provenance_producer: responsible entity (e.g. person)
+provenance_runid: responsible entity (e.g. person)
+provenance_lastexecuted: date this process was last executed
+provenance_keywords: provenance keywords (JSON of key/value pairs)
+ipac_gid: IRSA access control identifier: group ID
+mission_id: IRSA access control identifier: mission ID
+poly: IRSA internal spatial index descriptor
+pt: IRSA internal spatial index descriptor
+ipac_pub_date: public release date (UTC)
+lastmodified: timestamp of last modification of this row
+obs_publisher_did: IVOA ID for the dataset, assigned by the publisher (IRSA)
