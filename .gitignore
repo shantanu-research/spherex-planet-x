@@ -35,6 +35,8 @@ htmlcov/
 # Caches & Large Archives
 data/cache/
 data/drive/
+backend/cache/*
+!backend/cache/validation_summary.json
 *.zip
 *.tar.gz
 *.tgz

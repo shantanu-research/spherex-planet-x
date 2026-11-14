@@ -1,5 +1,6 @@
 .venv/
 .pipcache/
-cache/
+cache/*
+!cache/validation_summary.json
 __pycache__/
 *.part

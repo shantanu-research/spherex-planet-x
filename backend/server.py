@@ -29,6 +29,8 @@ from backend.pipeline import execute_pipeline, generate_gif_export
 from backend.data_loader import target_catalog
 
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+VALIDATION_SUMMARY_FILE = os.path.join(PROJECT_ROOT, "backend", "cache", "validation_summary.json")
+GAIA_OVERLAY_MEMORY_CACHE: Dict[str, List[Dict[str, Any]]] = {}
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -218,25 +220,42 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # -------------------------------------------------------------
         if path == "/api/overlay/catalogs":
             target_q = query.get("q", ["WISE 0855-0714"])[0]
-            target = get_target_by_query(target_q)
             mjd = float(query.get("mjd", [60810.0])[0])
             fov = float(query.get("fov", [6.5])[0])
 
-            gaia_stars = []
-            try:
-                gaia_stars = query_live_gaia_overlay(
-                    ra_deg=target["ra_deg"],
-                    dec_deg=target["dec_deg"],
-                    fov_arcmin=fov,
-                    target_mjd=mjd,
-                    grid_size=64,
-                    pixscale_arcsec=SPHEREx_PIXEL_SCALE_ARCSEC
-                )
-            except Exception:
-                gaia_stars = []
+            # Propagate target coordinates to target MJD to center cone search
+            target_epoch = 2000.0 + (mjd - 51544.5) / 365.25
+            resolved = resolve_target(target_q, target_epoch=target_epoch)
+            target = resolved["target"]
+            prop = resolved["epoch_propagation"]
+            center_ra = prop["ra_prop_deg"]
+            center_dec = prop["dec_prop_deg"]
+
+            # In-memory caching for live Gaia DR3 queries
+            cache_key = f"{target['id']}_{round(mjd, 1)}_{round(fov, 2)}"
+            gaia_stars = GAIA_OVERLAY_MEMORY_CACHE.get(cache_key)
+            is_live_gaia = True
+
+            if gaia_stars is None:
+                try:
+                    gaia_stars = query_live_gaia_overlay(
+                        ra_deg=center_ra,
+                        dec_deg=center_dec,
+                        fov_arcmin=fov,
+                        target_mjd=mjd,
+                        grid_size=64,
+                        pixscale_arcsec=SPHEREx_PIXEL_SCALE_ARCSEC
+                    )
+                    if gaia_stars:
+                        GAIA_OVERLAY_MEMORY_CACHE[cache_key] = gaia_stars
+                except Exception as ex:
+                    print(f"[/api/overlay/catalogs] Live Gaia DR3 query failed: {ex}")
+                    gaia_stars = []
 
             if not gaia_stars:
+                is_live_gaia = False
                 sim_data = generate_simulated_target_visits(target_key=target["common_name"], detector="D6", grid_size=64)
+                gaia_stars = []
                 for s in sim_data["field_stars"]:
                     gaia_stars.append({
                         "source_id": f"Gaia DR3 {2026000000 + s['id']}",
@@ -262,6 +281,10 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                 "status": "success",
                 "target": target["common_name"],
                 "epoch_mjd": mjd,
+                "center_ra_deg": center_ra,
+                "center_dec_deg": center_dec,
+                "source": "ESA Gaia DR3 (Live TAP + Proper Motion Propagated)" if is_live_gaia else "Simulated Field Stars (Fallback)",
+                "is_live_gaia": is_live_gaia,
                 "gaia_dr3": gaia_stars,
                 "catwise": gaia_stars[:8],
                 "skybot": skybot_objects
@@ -270,7 +293,26 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             return
 
         # -------------------------------------------------------------
-        # Endpoint 8: Export Animated GIF & MP4 (Section 9.2)
+        # Endpoint 8: Benchmark Scientific Validation Summary
+        # -------------------------------------------------------------
+        if path == "/api/validation":
+            if os.path.exists(VALIDATION_SUMMARY_FILE):
+                try:
+                    with open(VALIDATION_SUMMARY_FILE, "r", encoding="utf-8") as f:
+                        val_data = json.load(f)
+                    self._send_json(val_data)
+                    return
+                except Exception as ex:
+                    print(f"[/api/validation] Failed to read validation summary: {ex}")
+
+            self._send_json({
+                "status": "error",
+                "message": "Validation summary not found on disk"
+            }, status=404)
+            return
+
+        # -------------------------------------------------------------
+        # Endpoint 9: Export Animated GIF & MP4 (Section 9.2)
         # -------------------------------------------------------------
         if path in ("/api/export/gif", "/api/export.gif", "/api/export/mp4", "/api/export.mp4"):
             target_key = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
