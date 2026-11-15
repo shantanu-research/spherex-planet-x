@@ -286,6 +286,29 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                 self._send_binary(gif_bytes, "image/gif", filename)
             return
 
+        # Byte ranges for video, so browsers (Safari in particular) can play and seek the demo
+        rng = self.headers.get("Range", "")
+        if path.endswith(".mp4") and rng.startswith("bytes="):
+            fp = self.translate_path(path)
+            if os.path.isfile(fp):
+                size = os.path.getsize(fp)
+                a, _, b = rng[6:].split(",")[0].partition("-")
+                start = int(a) if a else max(0, size - int(b or 0))
+                end = min(size - 1, int(b)) if (a and b) else size - 1
+                if start >= size or start > end:
+                    self.send_response(416); self.send_header("Content-Range", f"bytes */{size}"); self.end_headers()
+                    return
+                with open(fp, "rb") as f:
+                    f.seek(start); body = f.read(end - start + 1)
+                self.send_response(206)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
         # Fallback to static file server (frontend HTML, CSS, JS)
         super().do_GET()
 

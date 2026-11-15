@@ -112,7 +112,7 @@ The team patch (`frontend/assets/mission-patch.svg`) is an original design: thre
 
 Team Overdrive (NASA Space Apps 2026, Pune local event).
 
-- **Team leader, ideation, integration and UI design: Shantanu Pawar.** Shaped the idea, planned and managed the work, and integrated every module into one system. Built the viewer, viewing modes, GIF/MP4 export, shareable URLs and the submission.
+- **Team leader, ideation, integration and UI design: Shantanu Pawar.** Shaped the idea, planned and managed the work, and integrated every module into one system. Designed and built the landing page and the UI, the viewer, viewing modes, GIF/MP4 export, shareable URLs and the submission.
 - **Data pipeline and backend: Malhar Tamhankar.** IRSA archive queries, visit grouping, per-visit frame selection, cutouts and caching, the FastAPI backend; demo-target pre-caching, faster cached search, retry handling for archive 503 errors, same-wavelength time-lapse and the first real SPHEREx light curves.
 - **Image processing: Akhilesh Rohit Bhosale.** Band-balanced stacking (wavelength labels from the spectral WCS, shared-band checks, alignment before stacking) and the colour-shift solution that keeps wavelength changes from being mistaken for motion.
 - **Spectra and science validation: Amrita Patil.** On-the-fly aperture spectra, sub-pixel centroid and proper-motion tracking, Gaia DR3 overlays propagated to each epoch, flag masking and saturation guard, and validation of the five test targets.
