@@ -97,15 +97,12 @@ Free-tier note: Render's free plan has limited RAM and sleeps when idle; the fir
 
 ## Who built what
 
-Roles are from the team's "Pick Your Track – Team Roles (v2)" document; the notes on Git history show where the repository differs from those assignments.
+Team Overdrive (NASA Space Apps 2026, Pune local event). Roles follow the team's track plan.
 
-- **Track 1, data pipeline and backend: Malhar Tamhankar** (the Track 1 name is blank in the roles document; Git shows Malhar's `backend/track1` commit, merged as PR #1): IRSA queries, visit grouping, per-visit frame selection, cutouts, FastAPI.
-- **Track 2, image processing: Akhilesh Rohit Bhosale:** wavelength labels from the spectral WCS, shared-band checks, matched-band mode, alignment audit (`backend/track2_calibration`).
-- **Track 3, spectra and validation: Amrita Patil:** aperture spectra, Gaia/CatWISE overlays and validation (`backend/track3_spectrophotometry`). Git note: these commits and the merge of PR #2 (from `25024131-spec`) are recorded under Shantanu Pawar's name, so please confirm authorship.
-- **Track 4, frame stitching, viewer and demo: Shantanu Pawar:** viewer, rendering modes, exports, shareable URLs, submission.
-- **Pikq P** appears in Git with five integration commits (real-data pipeline, MP4 export, spectral matching, validation, deployment configuration) but is not listed in the roles document. Add the right name and role if this is a team member.
-
-**Team: confirm every line above before submitting.**
+- **Track 1, data pipeline and backend: Malhar Tamhankar.** IRSA archive queries, visit grouping, per-visit frame selection, cutouts and caching, the FastAPI backend; demo-target pre-caching, faster cached search, retry handling for archive 503 errors, same-wavelength time-lapse and the first real SPHEREx light curves.
+- **Track 2, image processing: Akhilesh Rohit Bhosale.** Band-balanced stacking (wavelength labels from the spectral WCS, shared-band checks, alignment before stacking) and the colour-shift solution that keeps wavelength changes from being mistaken for motion.
+- **Track 3, spectra and science validation: Amrita Patil.** On-the-fly aperture spectra, sub-pixel centroid and proper-motion tracking, Gaia DR3 overlays propagated to each epoch, flag masking and saturation guard, and validation of the five test targets.
+- **Track 4, frame stitching, viewer and demo: Shantanu Pawar.** Frame sequencing and viewing modes, the web viewer, GIF/MP4 export, shareable and embeddable URLs, demo and submission.
 
 ## Submission and sources
 

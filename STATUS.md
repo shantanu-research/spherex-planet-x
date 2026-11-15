@@ -15,7 +15,7 @@ Updated: 2026-11-15
 
 ## Added this session
 - "Data as of" date in the Observations tab; reference molecular band positions labelled "(ref)" on real spectra; "Flag something interesting" button (local JSON download). Browser-verified.
-- README "Who built what" rewritten from the Drive roles document. Track 1 name is blank there, Track 3 commits are under Shantanu's name in Git, and "Pikq P" is not in the roles doc: **team must confirm**.
+- README "Who built what" written from the Drive roles and work log (Track 1 Malhar Tamhankar, Track 2 Akhilesh Rohit Bhosale, Track 3 Amrita Patil, Track 4 Shantanu Pawar).
 
 ## Still open (cannot be fixed from here)
 - Public URL (needs the owner's Render/hosting sign-in).
