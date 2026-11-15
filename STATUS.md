@@ -1,16 +1,14 @@
 # SPHEREx Planet X
-Updated: 2026-11-14
-- Discovery engine and multi-epoch visualizer; Python backend and static frontend.
-- Public GitHub repository: https://github.com/shantanu-research/spherex-planet-x
-- main pushed to origin and configured to track origin/main.
-- Downloaded Drive archive, cache, and virtual environment excluded from Git.
-- UI refined: larger image workspace, quieter controls, responsive layout.
-- Fixed frontend astrometry response mismatch that blocked archive rendering.
-- Explicit loading/error and missing-audit states; no new dependencies.
-- UI changes and regression tests pushed to main (5508364).
-- Public forks/PRs available; merge, squash and rebase enabled.
-- Direct push/merge access requires named collaborators.
-- Untracked backend orchestration files belong to other work.
-- Verified at 390px and 1440px; archive/simulation, tabs, playback and frame step.
-- Passed: node tests/test_frontend.cjs, JS syntax checks, git diff --check.
-- Next: continue backend work; scientific pipeline not revalidated.
+Updated: 2026-11-15
+
+## Verified (fresh venv, Python 3.13, all 42 project FITS downloaded and hash-verified)
+- `python -m pytest tests backend/tests/test_offline.py -q`: 51 passed, 0 skipped (real-FITS tests run).
+- `node tests/test_frontend.cjs`: passed.
+- `python scripts/validate_observations.py`: reproduces `docs/validation.json` with no diff.
+- Server run locally: `/api/health`, `/api/targets`, `/api/frames`, `/api/validation`, `/api/spectrum` return 200; `/api/export/mp4` returns real H.264 (25 frames).
+- Browser (Chromium) at 1440px and 390px: real FITS renders, no console errors, no horizontal scroll.
+
+## Not done / external
+- **No public deployment.** Needs a hosting account (Render Blueprint in `render.yaml`, or Docker). Not verified at any public URL.
+- Scientific limits are unchanged and documented in README: no PSF-fit WCS refinement, no independent astrometric validation, no discovery claim.
+- `/api/spectrum?q=rw_aur` returns `unavailable` for the default detector (apertures masked/outside); this is reported honestly, not substituted.
