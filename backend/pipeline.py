@@ -50,7 +50,7 @@ def execute_pipeline(
     blink_mode: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Executes complete 4-track scientific pipeline supporting the 7 Unified Viewing Modes (Section 9.1).
+    Executes complete scientific pipeline supporting the 7 Unified Viewing Modes (Section 9.1).
     Supports calibrated SPHEREx D1-D6 FITS observations
     and synthetic benchmark cubes.
     """
