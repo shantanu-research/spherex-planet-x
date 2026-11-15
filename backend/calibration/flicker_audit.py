@@ -1,7 +1,7 @@
 """
 SPHEREx Planet X Challenge - Band-balancing Step 5: prove the band-balanced stacks work.
 
-Three measured tests (Track2_Colour_Shift_Solution.pdf, Step 5):
+Three measured tests (Colour-shift solution specification, Step 5):
   1. Still-star ratio test: each still star's brightness in visit v divided by visit 1
      should be ~1, within its measured noise.
   2. Before vs after: brightness scatter of the same stars using the naive method
@@ -200,7 +200,8 @@ def run_difference_test(
     chi2_nu_field = chi2_field / n_blocks if n_blocks else None
     chi2_nu_stars = sum(star_terms) / len(star_terms) if star_terms else None
     return {
-        "status": "completed",
+        "status": "completed" if n_blocks else "not_run",
+        "reason": None if n_blocks else "No valid background blocks for the difference test",
         "visits": [stack_a.get("visit_id"), stack_b.get("visit_id")],
         "chi2_nu_field": round(chi2_nu_field, 3) if chi2_nu_field is not None else None,
         "n_field_blocks": n_blocks,

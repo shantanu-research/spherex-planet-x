@@ -120,19 +120,17 @@ def register_shot(
 
 def fill_missing_bands(
     vals: List[float], wts: List[float]
-) -> Optional[Tuple[List[float], List[float], bool]]:
-    """
-    One pixel, one value per band (in band order) with its Level-1 weight (0 = no data).
-    Bands with no data are interpolated from the nearest valid bands below and above, so
-    every band keeps its equal vote. Returns (vals, wts, was_filled) or None if no band
-    has data.
+) -> Optional[Tuple[List[float], float, bool]]:
+    """Fill missing bands and return their values, mean variance and fill flag.
+
+    Filled bands reuse measured channels, so combine their coefficients before
+    propagating variance instead of treating the fills as independent measurements.
     """
     valid = [i for i, w in enumerate(wts) if w > 0.0]
     if not valid:
         return None
-    if len(valid) == len(wts):
-        return vals, wts, False
-    vals, wts = list(vals), list(wts)
+    vals = list(vals)
+    coefficients = [1.0 if w > 0.0 else 0.0 for w in wts]
     for i in range(len(wts)):
         if wts[i] > 0.0:
             continue
@@ -141,12 +139,14 @@ def fill_missing_bands(
         if lo is not None and hi is not None:
             f = (i - lo) / (hi - lo)
             vals[i] = vals[lo] * (1.0 - f) + vals[hi] * f
-            wts[i] = 1.0 / ((1.0 - f) / wts[lo] + f / wts[hi])
+            coefficients[lo] += 1.0 - f
+            coefficients[hi] += f
         else:
             j = lo if lo is not None else hi
             vals[i] = vals[j]
-            wts[i] = wts[j]
-    return vals, wts, True
+            coefficients[j] += 1.0
+    mean_variance = sum(coefficients[j] ** 2 / wts[j] for j in valid) / len(wts) ** 2
+    return vals, mean_variance, len(valid) < len(wts)
 
 
 def label_exposure_spectral_channel(detector: str, target_wavelength_um: float) -> int:
@@ -353,11 +353,11 @@ def perform_band_balanced_stacking(
                     level2_variance[y][x] = None
                     n_incomplete_pixels += 1
                     continue
-                vals, wts, was_filled = filled
+                vals, mean_variance, was_filled = filled
                 if was_filled:
                     n_band_filled_pixels += 1
                 level2_stack[y][x] = sum(vals) * inv_n_shared
-                level2_variance[y][x] = sum(1.0 / w for w in wts) * (inv_n_shared ** 2)
+                level2_variance[y][x] = mean_variance
 
         # Step 4: sub-band stacks, groups of ~4 neighbouring bands (equal vote per band inside)
         sub_bands = []

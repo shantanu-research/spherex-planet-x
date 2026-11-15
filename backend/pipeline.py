@@ -48,7 +48,7 @@ STACK_MANIFEST_FIELDS = (
 )
 
 
-def build_track2_manifest(stack_res: Dict[str, Any], visits: List[Dict[str, Any]]) -> Dict[str, Any]:
+def build_band_balancing_manifest(stack_res: Dict[str, Any], visits: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Band-balancing hand-off for the spectrophotometry and rendering stages (fields agreed in the band-balancing spec):
       each stack: detector, bands_used, n_bands, n_shots_per_band, lambda_eff, comparable
@@ -203,7 +203,7 @@ def execute_pipeline(
 
     stack_res = perform_band_balanced_stacking(raw_visits, detector=detector)
     balanced_visits = stack_res["visit_stacks"]
-    track2_manifest = build_track2_manifest(stack_res, raw_visits)
+    band_balancing_manifest = build_band_balancing_manifest(stack_res, raw_visits)
 
     # Automated Still-Star Flicker Audit
     # Naive series = every single (cleaned) shot in time order; the target is kept out of the tests
@@ -339,7 +339,7 @@ def execute_pipeline(
         d6_stacks = _simulated_balanced_stacks(target_key, "D6")
 
     # Render processed frames
-    stacks_by_visit = {s["visit_id"]: s for s in track2_manifest["stacks"]}
+    stacks_by_visit = {s["visit_id"]: s for s in band_balancing_manifest["stacks"]}
     rendered_frames = []
     for idx, item in enumerate(active_series):
         raw_img = item.get("stacked_image") or item.get("difference_image")
@@ -401,7 +401,7 @@ def execute_pipeline(
         "pixel_scale_arcsec": SPHEREx_PIXEL_SCALE_ARCSEC,
         "fov_arcmin": fov_arcmin,
         "n_frames": len(rendered_frames),
-        "track2": track2_manifest,
+        "band_balancing": band_balancing_manifest,
         "stretches": {
             "stretch_type": stretch,
             "vmin": round(vmin, 3),

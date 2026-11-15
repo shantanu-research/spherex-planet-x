@@ -175,7 +175,7 @@ class TestSpherexPipeline(unittest.TestCase):
         """Every stack and shot carries the fields agreed with the spectrophotometry and rendering stages."""
         from backend.pipeline import execute_pipeline
         res = execute_pipeline("WISE 0855-0714", "D6", "visit_blink", source_mode="simulated")
-        t2 = res["manifest"]["track2"]
+        t2 = res["manifest"]["band_balancing"]
         self.assertGreaterEqual(t2["n_bands_shared"], 10)
         self.assertTrue(t2["comparable"])
         for stack in t2["stacks"]:
