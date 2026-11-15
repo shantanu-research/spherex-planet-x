@@ -79,6 +79,8 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             self._handle_get()
         except ValueError as exc:
             self._send_json({"status": "error", "message": str(exc)}, status=400)
+        except Exception:
+            self._send_json({"status": "unavailable", "message": "Processing failed. Please retry or select another target."}, status=503)
 
     def _handle_get(self):
         parsed = urllib.parse.urlparse(self.path)

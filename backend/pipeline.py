@@ -251,8 +251,8 @@ def execute_pipeline(
             }
 
     if source_mode not in ("simulation", "simulated", "synthetic"):
-        return {"status": "unavailable", "is_real_data": False, "frames": [],
-                "message": "No real frames available. Select simulation explicitly to view generated data."}
+        from backend.live_frames import render_live
+        return render_live(target_meta, detector, fov_arcmin, effective_mode)
 
     # Generate multi-epoch Level-2 simulation
     sim_data = generate_simulated_target_visits(target_key=target_key, detector=detector, grid_size=64)

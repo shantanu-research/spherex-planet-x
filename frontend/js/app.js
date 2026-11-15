@@ -452,7 +452,7 @@ class SpherexApp {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Observation request failed (${resp.status})`);
       const data = await resp.json();
-      if (!data.frames?.length) throw new Error('No frames returned');
+      if (!data.frames?.length) throw new Error(data.message || 'No frames returned');
       this.pipelineData = data;
       if (this.state.sourceMode === 'auto') {
         document.getElementById('sourceRealBtn').classList.toggle('active', data.is_real_data);
@@ -517,7 +517,7 @@ class SpherexApp {
       if (message) {
         message.hidden = false;
         message.querySelector('strong').textContent = 'Could not load observations';
-        message.querySelector('span').textContent = 'Select another target or try the simulation source.';
+        message.querySelector('span').textContent = err.message || 'Select another target or try the simulation source.';
       }
     }
   }
