@@ -54,6 +54,10 @@ class FlipbookViewer {
       this.setZoom(this.zoomLevel * (e.deltaY < 0 ? 1.15 : 0.87));
     }, { passive: false });
 
+    // Dragging on the image must not start a text selection on the page.
+    canvas.addEventListener('mousedown', (e) => e.preventDefault());
+    document.addEventListener('selectstart', (e) => { if (this.isDragging || this.isDraggingWipe) e.preventDefault(); });
+
     // Pointer events cover mouse, touch and pen.
     canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
