@@ -2,6 +2,12 @@
 
 A NASA Space Apps project for inspecting SPHEREx infrared observations without confusing wavelength changes with temporal variability. Real FITS data and simulations are separate, explicitly labelled sources.
 
+![Sky Flipbook showing real SPHEREx D6 data for WISE 0855-0714](docs/screenshot.png)
+
+![Animated flipbook of real SPHEREx exposures of WISE 0855-0714 (detector D6); flicker is wavelength change, not variability](docs/demo/flipbook-wise0855.gif)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shantanu-research/spherex-planet-x)
+
 ## Run
 
 Requires Python 3.12+, Node.js for the frontend check, and FFmpeg for MP4 export.
@@ -84,7 +90,18 @@ docker run --rm -p 8080:8080 spherex-flipbook
 
 The image downloads and verifies project observations during its build and installs FFmpeg. Import this repository into Render as a Blueprint using `render.yaml`; `/api/health` is the readiness endpoint. Live requests need outbound HTTPS and a writable cache. No secret is required for public astronomical archives.
 
+Free-tier note: Render's free plan has limited RAM and sleeps when idle; the first request after sleeping is slow. Open `/api/health` to warm it before a demo.
+
 **Publication status:** the backend is running in the development workspace, not at a verified public production URL. A hosting-account connection is still required. GitHub Pages creation was denied by the current integration (HTTP 403); Pages also cannot run this Python backend. Do not describe the application as publicly deployed until a hosting deployment succeeds.
+
+## Who built what
+
+Drawn from the Git history; **team members should confirm and expand these lines before submission.**
+
+- **Shantanu Pawar:** repository setup, live Gaia DR3 overlay with proper-motion propagation, IRSA Level-2 forced-aperture SED extraction, sub-pixel astrometry, UI fixes.
+- **Malhar Tamhankar:** Track 1 data backend (IRSA query, visit grouping, per-visit frame selection, cutouts, FastAPI).
+- **Akhilesh Bhosale:** Track 2 calibration (wavelength labels from the spectral WCS, shared-band checks, matched-band mode, alignment audit).
+- **Pikq P:** real-data pipeline integration, MP4 export, spectral matching, accessible viewer, validation and deployment configuration.
 
 ## Submission and sources
 

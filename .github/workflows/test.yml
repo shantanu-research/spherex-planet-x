@@ -15,3 +15,12 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: python -m pytest tests backend/tests/test_offline.py -q
       - run: node tests/test_frontend.cjs
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t spherex-flipbook .
+      - run: |
+          docker run -d --name sx -p 8080:8080 spherex-flipbook
+          for i in $(seq 1 40); do curl -sf localhost:8080/api/health && exit 0; sleep 3; done
+          docker logs sx; exit 1
