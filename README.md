@@ -1,5 +1,7 @@
 # SPHEREx "Planet X" Discovery Engine & Multi-Epoch Visualizer
 
+> **Development status:** This project is not yet scientifically validated or submission-ready. The main viewer does not yet fetch and process live IRSA cutouts end to end. Real-data rendering currently requires local FITS archives; simulated data must be selected explicitly. Several scientific performance claims and feature descriptions below are design goals that still require independent verification. MP4 export is not implemented.
+
 **NASA Space Apps Challenge 2026 — Planet X and SPHEREx**
 
 A high-performance astronomical discovery, astrometric registration, and spectrophotometric visualization platform engineered specifically for **SPHEREx Level-2 Multi-Extension FITS (MEF)** all-sky survey data.

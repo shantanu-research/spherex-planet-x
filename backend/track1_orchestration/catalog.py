@@ -131,6 +131,8 @@ def get_benchmark_list() -> List[Dict[str, Any]]:
 def get_target_by_query(query: str) -> Dict[str, Any]:
     """Fuzzy/exact match query against benchmark catalog."""
     q = query.strip().lower()
+    if not q:
+        raise ValueError("Target name cannot be empty")
     q_norm = q.replace("'", "").replace(" ", "").replace("-", "").replace("_", "")
     for name, target in BENCHMARK_TARGETS.items():
         name_norm = name.lower().replace("'", "").replace(" ", "").replace("-", "").replace("_", "")
@@ -145,5 +147,4 @@ def get_target_by_query(query: str) -> Dict[str, Any]:
             q_norm in common_norm or
             common_norm in q_norm):
             return target
-    # Fallback default to WISE 0855
-    return BENCHMARK_TARGETS["WISE 0855-0714"]
+    raise ValueError(f"Unknown benchmark target: {query}")

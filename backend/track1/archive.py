@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import time
 from dataclasses import dataclass, asdict
@@ -40,6 +41,8 @@ class Exposure:
 
 def build_query(ra: float, dec: float, detector: str | None = None,
                 t_min_mjd: float | None = None, t_max_mjd: float | None = None) -> str:
+    if not math.isfinite(ra) or not math.isfinite(dec) or not 0 <= ra < 360 or not -90 <= dec <= 90:
+        raise ValueError("RA must be in [0, 360) and declination in [-90, 90] degrees")
     q = (
         "SELECT a.uri, p.time_bounds_lower, p.time_bounds_upper, p.energy_bandpassname "
         "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "
@@ -57,10 +60,13 @@ def build_query(ra: float, dec: float, detector: str | None = None,
 def _detector_name(det: str | int) -> str:
     s = str(det).strip().upper()
     if s.startswith("SPHEREX-"):
-        return "SPHEREx-" + s.split("-", 1)[1]
+        s = s.split("-", 1)[1]
     if s.startswith("D"):
         s = s[1:]
-    return f"SPHEREx-D{int(s)}"
+    number = int(s)
+    if number not in range(1, 7):
+        raise ValueError("Detector must be between D1 and D6")
+    return f"SPHEREx-D{number}"
 
 
 def guess_release(uri: str) -> str:
@@ -114,6 +120,8 @@ def search(ra: float, dec: float, size_deg: float = 0.083, detector: str | None 
            use_cache: bool = True, tap=None) -> list[Exposure]:
     """Position -> deduplicated list of exposures (visit numbers not yet set)."""
     query = build_query(ra, dec, detector, t_min_mjd, t_max_mjd)
+    if not math.isfinite(size_deg) or not 0 < size_deg <= 0.25:
+        raise ValueError("Cutout size must be between 0 and 0.25 degrees")
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = CACHE_DIR / (hashlib.sha1(query.encode()).hexdigest() + ".json")
     if use_cache and cache_file.exists() and time.time() - cache_file.stat().st_mtime < QUERY_CACHE_SECONDS:

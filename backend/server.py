@@ -75,6 +75,12 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        try:
+            self._handle_get()
+        except ValueError as exc:
+            self._send_json({"status": "error", "message": str(exc)}, status=400)
+
+    def _handle_get(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
@@ -84,22 +90,13 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # -------------------------------------------------------------
         if path == "/api/health":
             health_data = {
-                "status": "ONLINE (CALIBRATED)",
-                "pipeline_version": "2.2.0-R7",
-                "data_as_of_utc": "2026-11-13T14:30:00Z",
-                "active_collections": [
-                    "spherex_dr1",
-                    "spherex_qr3",
-                    "spherex_dr1_deep",
-                    "spherex_qr3_deep"
-                ],
-                "primary_release": "DR1 (Reprocessed Surveys 1-2 under Pipeline R7, Released Nov 12, 2026)",
-                "secondary_release": "QR3 (Surveys 3-4 under Pipeline R7)",
+                "status": "online",
+                "archive_status": "not checked",
                 "cache_metrics": {
                     "memory_entries": len(cache_instance._memory_cache),
                     "max_memory_entries": cache_instance._max_memory,
                     "disk_cache_dir": CACHE_DIR,
-                    "status": "pre-warmed"
+                    "status": "available"
                 },
                 "instrument_constants": {
                     "pixel_scale_arcsec": SPHEREx_PIXEL_SCALE_ARCSEC,
@@ -141,34 +138,27 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 4: Discovered Observations & Visits (Section 9.2)
         # -------------------------------------------------------------
         if path == "/api/observations":
-            target_q = query.get("q", ["WISE 0855-0714"])[0]
-            fov = float(query.get("fov", [6.5])[0])
-            resolved = resolve_target(target_q)
-            target_meta = resolved["target"]
-
-            sim_data = generate_simulated_target_visits(target_key=target_meta["common_name"], detector="D6", grid_size=64)
-            obs_visits = []
-            for v in sim_data["visits"]:
-                obs_visits.append({
-                    "visit_id": v["visit_id"],
-                    "survey_pass": v["survey_pass"],
-                    "mjd_mid": v["mjd_mid"],
-                    "date_utc": v["date_utc"],
-                    "n_exposures": len(v["exposures"]),
-                    "detectors_covered": ["D1", "D2", "D3", "D4", "D5", "D6"],
-                    "release": "DR1" if v["mjd_mid"] < 61176.0 else "QR3"
-                })
-
-            payload = {
-                "status": "success",
-                "target": target_meta["common_name"],
-                "search_center": {"ra_deg": target_meta["ra_deg"], "dec_deg": target_meta["dec_deg"]},
-                "fov_arcmin": fov,
-                "n_visits_found": len(obs_visits),
-                "visits": obs_visits,
-                "release_provenance": "DR1 > QR3 (Pipeline R7 Deduplicated)"
-            }
-            self._send_json(payload)
+            from backend.track1.archive import search
+            from backend.track1.visits import group_visits, summarize
+            try:
+                target_q = query.get("q", ["WISE 0855-0714"])[0]
+                fov = float(query.get("fov", [6.5])[0])
+                if not 0 < fov <= 15:
+                    raise ValueError("Field of view must be between 0 and 15 arcminutes")
+                if "ra" in query and "dec" in query:
+                    ra, dec = float(query["ra"][0]), float(query["dec"][0])
+                else:
+                    resolved = resolve_target(target_q)
+                    position = resolved["epoch_propagation"]
+                    ra, dec = position["ra_prop_deg"], position["dec_prop_deg"]
+                exposures = group_visits(search(ra, dec, size_deg=fov / 60))
+                visits = summarize(exposures)
+                self._send_json({"status": "success", "source": "IRSA", "visits": visits,
+                                 "n_visits_found": len(visits), "n_exposures": len(exposures)})
+            except ValueError as exc:
+                self._send_json({"status": "error", "message": str(exc)}, status=400)
+            except Exception:
+                self._send_json({"status": "unavailable", "message": "IRSA observation discovery failed."}, status=503)
             return
 
         # -------------------------------------------------------------
@@ -252,7 +242,7 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                     print(f"[/api/overlay/catalogs] Live Gaia DR3 query failed: {ex}")
                     gaia_stars = []
 
-            if not gaia_stars:
+            if not gaia_stars and query.get("source", ["real"])[0] in ("simulation", "simulated", "synthetic"):
                 is_live_gaia = False
                 sim_data = generate_simulated_target_visits(target_key=target["common_name"], detector="D6", grid_size=64)
                 gaia_stars = []
@@ -267,8 +257,11 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                         "is_variable": False
                     })
 
+            if not gaia_stars:
+                is_live_gaia = False
+
             skybot_objects = []
-            if "Planet X" in target["common_name"]:
+            if "Planet X" in target["common_name"] and query.get("source", ["real"])[0] in ("simulation", "simulated", "synthetic"):
                 skybot_objects.append({
                     "object_name": "Asteroid (2026 PX-Candidate)",
                     "pixel_x": 32.0,
@@ -283,10 +276,10 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                 "epoch_mjd": mjd,
                 "center_ra_deg": center_ra,
                 "center_dec_deg": center_dec,
-                "source": "ESA Gaia DR3 (Live TAP + Proper Motion Propagated)" if is_live_gaia else "Simulated Field Stars (Fallback)",
+                "source": "ESA Gaia DR3 (Live TAP + Proper Motion Propagated)" if is_live_gaia else ("Simulated Field Stars" if gaia_stars else "unavailable"),
                 "is_live_gaia": is_live_gaia,
                 "gaia_dr3": gaia_stars,
-                "catwise": gaia_stars[:8],
+                "catwise": [],
                 "skybot": skybot_objects
             }
             self._send_json(payload)
@@ -315,6 +308,9 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 9: Export Animated GIF & MP4 (Section 9.2)
         # -------------------------------------------------------------
         if path in ("/api/export/gif", "/api/export.gif", "/api/export/mp4", "/api/export.mp4"):
+            if path.endswith("mp4"):
+                self._send_json({"status": "unavailable", "message": "MP4 export is not implemented; GIF export is available."}, status=501)
+                return
             target_key = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
             detector = query.get("det", query.get("detector", ["D6"]))[0].upper()
             mode = query.get("mode", ["visit_blink"])[0].lower()

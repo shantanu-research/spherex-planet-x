@@ -494,5 +494,7 @@ def extract_102_channel_spectrum(
         if real_result is not None:
             return real_result
 
-    # Fallback to analytical Planck model
-    return extract_synthetic_spectrum(target_metadata)
+    if effective_source in ("simulation", "simulated", "synthetic"):
+        return extract_synthetic_spectrum(target_metadata)
+    return {"status": "unavailable", "source": "real", "measurements": [],
+            "message": "No real spectrum is available for this target."}

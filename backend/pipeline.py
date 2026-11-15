@@ -105,7 +105,7 @@ def execute_pipeline(
         use_real = target_catalog.has_real_data(target_key)
     elif source_mode == "auto":
         # Auto mode: Use real data for archive targets, keeping WISE 0855 as default 4-visit benchmark suite
-        if target_catalog.has_real_data(target_key) and not target_key.startswith("WISE 0855"):
+        if target_catalog.has_real_data(target_key):
             use_real = True
 
     if use_real:
@@ -124,12 +124,6 @@ def execute_pipeline(
 
             # Fetch real Gaia reference stars
             field_stars = target_catalog.get_gaia_stars(target_key, grid_size=w, fov_arcmin=active_fov)
-            if not field_stars:
-                field_stars = [
-                    {"id": 1, "x": w * 0.35, "y": h * 0.45, "teff": 5200},
-                    {"id": 2, "x": w * 0.72, "y": h * 0.28, "teff": 4800},
-                    {"id": 3, "x": w * 0.81, "y": h * 0.75, "teff": 6100}
-                ]
 
             rendered_frames = []
             center_x = w / 2.0
@@ -198,39 +192,13 @@ def execute_pipeline(
                     "rgb_pixels": rgb_frame
                 })
 
-            flicker_audit = {
-                "status": "completed",
-                "mean_raw_flicker_pct": 1.42,
-                "mean_balanced_flicker_pct": 0.48,
-                "overall_flicker_suppression_pct": 66.2,
-                "monitored_stars_count": len(field_stars),
-                "audit_passed": True,
-                "methodology": "NASA Calibrated Absolute Flux Preservation"
-            }
-
-            pm_total = round(math.sqrt(target_meta.get("pm_ra_mas", 0.0)**2 + target_meta.get("pm_dec_mas", 0.0)**2) / 1000.0, 3)
-            astrometric_validation = {
-                "catalog_pm_ra_mas_yr": target_meta.get("pm_ra_mas", 0.0),
-                "catalog_pm_dec_mas_yr": target_meta.get("pm_dec_mas", 0.0),
-                "fitted_pm_ra_mas_yr": round(target_meta.get("pm_ra_mas", 0.0) * 0.998, 1),
-                "fitted_pm_dec_mas_yr": round(target_meta.get("pm_dec_mas", 0.0) * 0.999, 1),
-                "proper_motion_total_arcsec_yr": pm_total,
-                "astrometric_residuals_mas": 4.2,
-                "validation_status": "CONFIRMED_HIGH_PROPER_MOTION"
-            }
-
-            p9_detectability = {
-                "single_visit_limit_ab_mag": 17.61,
-                "coadded_stack_limit_ab_mag": round(17.61 + 1.25 * math.log10(max(1, len(rendered_frames))), 2),
-                "planet_nine_predicted_v_mag": 23.5,
-                "magnitude_gap_to_p9": round(23.5 - (17.61 + 1.25 * math.log10(max(1, len(rendered_frames)))), 2),
-                "coadded_visits": len(rendered_frames),
-                "detection_verdict": "CONFIRMED_POINT_SOURCE (Real Archive Target)",
-                "zodiacal_light_subtraction": "Calibrated ZODI plane subtracted",
-                "cosmic_ray_filter": "FLAGS plane bitmask 0x01 filtered"
-            }
-
-            spectrum_data = extract_102_channel_spectrum(target_meta)
+            # These measurements require independent analysis of the actual images.
+            # Never substitute catalogue values or fixed example metrics for a fit.
+            flicker_audit = None
+            astrometric_validation = None
+            p9_detectability = None
+            spectrum_data = {"status": "unavailable", "spectrum": [],
+                             "message": "Real-data spectrum has not been computed."}
 
             manifest = {
                 "target": target_meta["common_name"],
@@ -282,6 +250,10 @@ def execute_pipeline(
                 "frames": rendered_frames,
             }
 
+    if source_mode not in ("simulation", "simulated", "synthetic"):
+        return {"status": "unavailable", "is_real_data": False, "frames": [],
+                "message": "No real frames available. Select simulation explicitly to view generated data."}
+
     # Generate multi-epoch Level-2 simulation
     sim_data = generate_simulated_target_visits(target_key=target_key, detector=detector, grid_size=64)
     raw_visits = sim_data["visits"]
@@ -309,7 +281,7 @@ def execute_pipeline(
     diff_visits = compute_difference_frames(balanced_visits, template=median_template)
 
     # Track 3: 102-Channel Spectrophotometry & Astrometric Validation
-    spectrum_data = extract_102_channel_spectrum(target_meta)
+    spectrum_data = extract_102_channel_spectrum(target_meta, source_mode="simulated")
     astrometric_validation = validate_proper_motion_astrometry(balanced_visits, target_meta)
 
     # 3. Track 4: WCS Engine, Idea 1 Relative Positioning & Stretching
@@ -525,6 +497,8 @@ def generate_gif_export(
         blink_mode=blink_mode,
     )
     raw_frames = pipeline_res["frames"]
+    if not raw_frames:
+        raise ValueError(pipeline_res.get("message", "No frames are available to export"))
     hud_frames = []
 
     mode_label = f"{mode.upper()}"

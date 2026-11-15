@@ -526,24 +526,19 @@ class SpherexApp {
     try {
       const resp = await fetch(`/api/observations?q=${encodeURIComponent(this.state.target)}`);
       const obs = await resp.json();
-      
+      if (!resp.ok) throw new Error(obs.message || 'Observation discovery failed');
       const countEl = document.getElementById('obsVisitsCount');
       if (countEl) countEl.textContent = `${obs.n_visits_found} Visits`;
-
       const tbody = document.getElementById('obsTableBody');
-      if (tbody && obs.visits) {
-        tbody.innerHTML = '';
-        for (const v of obs.visits) {
+      if (tbody) {
+        tbody.replaceChildren();
+        for (const v of obs.visits || []) {
           const row = document.createElement('tr');
-          row.style.borderBottom = '1px solid var(--border-subtle)';
-          row.innerHTML = `
-            <td style="padding: 9px 12px; font-weight: 700; color: var(--text-pure);">${v.visit_id}</td>
-            <td style="padding: 9px 12px; color: var(--text-secondary);">${v.survey_pass}</td>
-            <td style="padding: 9px 12px; color: var(--text-pure);">${v.date_utc.split(' ')[0]}</td>
-            <td style="padding: 9px 12px; color: var(--text-muted);">${v.mjd_mid.toFixed(1)}</td>
-            <td style="padding: 9px 12px; color: var(--text-secondary);">${v.n_exposures} exps</td>
-            <td style="padding: 9px 12px;"><span style="background: var(--panther-purple-subtle); color: var(--panther-purple-bright); border: 1px solid var(--panther-purple-border); padding: 2px 7px; border-radius: 3px; font-weight: 600;">${v.release}</span></td>
-          `;
+          for (const value of [v.visit + 1, '—', v.first || '—', '—', `${v.n_exposures} exps`, (v.detectors || []).join(', ')]) {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.appendChild(cell);
+          }
           tbody.appendChild(row);
         }
       }
@@ -667,7 +662,13 @@ class SpherexApp {
   }
 
   updateAstrometryHUD(astro, target) {
-    if (!astro) return;
+    if (!astro) {
+      for (const id of ['astFittedPm', 'astGaiaResidual', 'astVerdict']) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'Not measured';
+      }
+      return;
+    }
     const elTarget = document.getElementById('astTargetName');
     if (elTarget) elTarget.textContent = target.common_name;
     const elSpec = document.getElementById('astSpectralType');
@@ -690,7 +691,14 @@ class SpherexApp {
   }
 
   updateFlickerAudit(audit) {
-    if (!audit) return;
+    if (!audit) {
+      for (const id of ['rawFlickerVal', 'balancedFlickerVal', 'flickerSuppressionVal', 'nullTestVal']) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'Not measured';
+      }
+      this.auditChart.setData(null);
+      return;
+    }
     const rawF = document.getElementById('rawFlickerVal');
     if (rawF) rawF.textContent = `${audit.mean_raw_flicker_pct}%`;
     const balF = document.getElementById('balancedFlickerVal');
