@@ -119,7 +119,7 @@ Team Overdrive (NASA Space Apps 2026, Pune local event). Roles follow the team's
 
 ## Submission and sources
 
-[Project description](docs/submission/project.md) · [Demo script](docs/submission/demo-script.md) · [Recorded walkthrough](docs/demo/walkthrough.mp4) · [Validation report](docs/validation.json) · [Input manifest](data/observation-manifest.json)
+[Project description](docs/submission/project.md) · [Recorded walkthrough](docs/demo/walkthrough.mp4) · [Validation report](docs/validation.json) · [Input manifest](data/observation-manifest.json)
 
 Data: [NASA SPHEREx / IRSA](https://irsa.ipac.caltech.edu/Missions/spherex.html), [Gaia](https://gea.esac.esa.int/archive/), [CatWISE](https://irsa.ipac.caltech.edu/Missions/catwise.html), [CDS Sesame](https://cds.unistra.fr/cgi-bin/Sesame).
 
