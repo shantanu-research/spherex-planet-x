@@ -320,6 +320,12 @@ class SpherexApp {
       });
     }
 
+    document.querySelectorAll('.pipe-card[data-tab]').forEach(card => card.addEventListener('click', () => {
+      const tab = card.dataset.tab; if (!tab) return;
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.click();
+      document.querySelector('.science-panel-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+
     // 9. Tab Navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -541,6 +547,8 @@ class SpherexApp {
       // Update 102-Channel Spectrophotometry
       this.spectrumChart.setData(data.spectrophotometry);
 
+      this.updatePipelineStrip();
+
       // Rebuild dynamic visit scrubber buttons
       this.rebuildVisitScrubber();
 
@@ -563,6 +571,7 @@ class SpherexApp {
       if (err.name === 'AbortError' || this.pendingRequest !== controller) return;
       console.error('Failed to load pipeline data:', err);
       if (statusEl) statusEl.textContent = 'Observations unavailable';
+      this.pipelineData = null; this.updatePipelineStrip(err.message || 'Request failed.');
       if (message) {
         message.hidden = false;
         message.querySelector('strong').textContent = 'Could not load observations';
@@ -586,6 +595,7 @@ class SpherexApp {
         const firsts = (obs.visits || []).map(v => v.first).filter(Boolean).sort();
         countEl.textContent = `${obs.n_visits_found} Visits` + (firsts.length ? ` · data as of ${firsts[firsts.length - 1].slice(0, 10)}` : '');
       }
+      { const f = (obs.visits || []).map(v => v.first).filter(Boolean).sort(); this.observationSummary = { visits: obs.n_visits_found, latest: f.length ? f[f.length - 1].slice(0, 10) : 'n/a' }; if (this.pipelineData) this.updatePipelineStrip(); }
       const tbody = document.getElementById('obsTableBody');
       if (tbody) {
         tbody.replaceChildren();
@@ -625,6 +635,7 @@ class SpherexApp {
   renderFrame(idx) {
     if (!this.pipelineData || !this.pipelineData.frames || this.pipelineData.frames.length === 0) return;
     this.state.currentFrameIdx = idx % this.pipelineData.frames.length;
+    this.updateViewerPipe();
     const f = this.pipelineData.frames[this.state.currentFrameIdx];
 
     // Determine target reticle position based on frame dimensions and mode
@@ -770,6 +781,44 @@ class SpherexApp {
     this.auditChart.setData(audit);
   }
 
+  setPipe(id, state, label, detail) {
+    const card = document.getElementById(id); if (!card) return;
+    const st = card.querySelector('.pipe-state'); st.dataset.state = state; st.textContent = label;
+    card.querySelector('.pipe-detail').textContent = detail;
+  }
+
+  updatePipelineStrip(failure) {
+    const d = this.pipelineData;
+    if (failure || !d) {
+      const why = failure || 'No data loaded.';
+      this.setPipe('pipeT1', 'limited', 'Request returned no frames', why);
+      this.setPipe('pipeT2', 'unavailable', 'No frames', 'No comparison could be built for this detector and mode.');
+      this.setPipe('pipeT3', 'unavailable', 'No measurements', 'Spectra and astrometry need frames.');
+      this.setPipe('pipeT4', 'unavailable', 'Nothing to show', 'Try another detector, mode or the explicit Simulation source.');
+      return;
+    }
+    const m = d.manifest || {};
+    const real = d.is_real_data;
+    const obs = this.observationSummary;
+    this.setPipe('pipeT1', real ? 'ok' : 'limited', real ? 'Archive FITS' : 'Simulation',
+      `${m.n_exposures ?? '?'} exposures` + (obs ? ` in ${obs.visits} visits · latest ${obs.latest}` : '') + (real ? '' : ' · synthetic, not observational evidence'));
+    const nMasked = d.frames.filter(f => f.mask).length;
+    this.setPipe('pipeT2', (m.errors || []).length ? 'limited' : 'ok', `${m.n_frames ?? d.frames.length} frames`,
+      `${nMasked} with quality masks · ${Number(m.pixel_scale_arcsec ?? 6.15).toFixed(2)}″/px grid · ${(m.errors || []).length} input errors`);
+    const sp = d.spectrophotometry || {};
+    const nSamples = (sp.spectrum || []).length;
+    const astro = d.astrometric_validation?.status || 'not measured';
+    this.setPipe('pipeT3', nSamples ? 'ok' : 'limited', nSamples ? `${nSamples} spectral samples` : 'No spectrum',
+      `Astrometry: ${astro}` + (this.catalogNote ? ` · ${this.catalogNote}` : ''));
+    this.updateViewerPipe();
+  }
+
+  updateViewerPipe() {
+    const d = this.pipelineData; if (!d) return;
+    this.setPipe('pipeT4', 'ok', `${this.state.mode.replace(/_/g, ' ')}`,
+      `${this.state.detector} · frame ${this.state.currentFrameIdx + 1} of ${d.frames.length} · ${this.state.fps} fps · ${this.state.colorMode}`);
+  }
+
   async loadCatalogs() {
     const data = this.pipelineData;
     const enabled = document.getElementById('catalogToggle').checked;
@@ -788,8 +837,9 @@ class SpherexApp {
       if (!response.ok) throw new Error(result.message);
       data.field_stars = [...result.gaia_dr3, ...result.catwise];
       status.textContent = `${data.field_stars.length} references. ${result.note} ${result.errors.join(' ')}`;
+      this.catalogNote = `${data.field_stars.length} Gaia/CatWISE refs` + (result.errors.length ? ` (${result.errors.length} query errors)` : ''); this.updatePipelineStrip();
       this.renderFrame(this.state.currentFrameIdx);
-    } catch (error) { status.textContent = `Catalogue references unavailable: ${error.message}`; }
+    } catch (error) { status.textContent = `Catalogue references unavailable: ${error.message}`; this.catalogNote = 'catalogue overlay unavailable'; this.updatePipelineStrip(); }
   }
 
   exportGif(format = "gif") {

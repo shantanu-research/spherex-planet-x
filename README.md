@@ -33,6 +33,7 @@ The default is Barnard's Star, D1. Select another preset to inspect individual o
 - Native-pixel aperture flux measurements with errors and observation dates; CSV export and an accessible data table.
 - Live Gaia and CatWISE reference overlays, mask display, pan/zoom, wipe comparison, playback and keyboard controls.
 - Dataset 'data as of' date, labelled reference band positions on spectra (not detections), and a volunteer 'Flag something interesting' button that saves a local JSON note (nothing is uploaded).
+- A pipeline strip showing, for the current field, what each of the four tracks produced (data and visits, calibration and masks, spectra and astrometry, viewer state); unavailable stages are reported as unavailable and each card opens its measurements tab.
 - Shareable URL state, iframe embed code, GIF and real H.264 MP4 exports with observation telemetry.
 - Docker/Render configuration and GitHub Actions checks.
 

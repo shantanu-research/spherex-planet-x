@@ -88,6 +88,17 @@
       <progress id="loadingProgress" aria-label="Loading observations" hidden></progress>
       <p id="scienceNotes" role="status"></p>
     </form>
+    <section id="pipelineStrip" class="pipeline-strip" aria-labelledby="pipelineHeading">
+      <h2 id="pipelineHeading">Pipeline: how this view was made</h2>
+      <ol class="pipe-list">
+        <li><button type="button" class="pipe-card" data-tab="tabObservations" id="pipeT1"><span class="pipe-track">Track 1 · Data</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="tabAudit" id="pipeT2"><span class="pipe-track">Track 2 · Calibration</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="tabSpectra" id="pipeT3"><span class="pipe-track">Track 3 · Spectra &amp; astrometry</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="" id="pipeT4"><span class="pipe-track">Track 4 · Viewer</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+      </ol>
+      <p class="pipe-hint">Each card shows what that stage produced for the current field. Select a card to open its measurements. Unavailable stages are shown as such, never filled in.</p>
+    </section>
+
 
     <!-- LEFT COLUMN: Canvas Flipbook & Processing Controls -->
     <section class="panel">
