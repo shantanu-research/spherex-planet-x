@@ -111,7 +111,8 @@ class SpectrumChart {
     }
 
     // 2. Draw Molecular Feature Markers (Delicate Silver Dashed)
-    const molecularFeatures = this.data.source?.includes("real") ? [] : [
+    const isReal = this.data.source?.includes("real");
+    const molecularFeatures = [
       { name: "H2O 1.4u", lam: 1.40 },
       { name: "H2O 1.9u", lam: 1.90 },
       { name: "CH4 2.2u", lam: 2.20 },
@@ -125,6 +126,7 @@ class SpectrumChart {
     ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
     ctx.lineWidth = 1;
     for (const mol of molecularFeatures) {
+      if (isReal) mol.name = mol.name.replace(/ ?\(ref\)$/, '') + ' (ref)';
       const mx = xMap(mol.lam);
       ctx.beginPath();
       ctx.moveTo(mx, margin.top);

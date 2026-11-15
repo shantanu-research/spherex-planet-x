@@ -155,6 +155,7 @@ class SpherexApp {
     document.getElementById('maskToggle').addEventListener('change', e => { this.viewer.showMask = e.target.checked; this.viewer.render(); });
     document.getElementById('catalogToggle').addEventListener('change', () => this.loadCatalogs());
     document.getElementById('exportMp4Btn').addEventListener('click', () => this.exportGif('mp4'));
+    document.getElementById('flagBtn').addEventListener('click', () => this.flagInteresting());
     document.getElementById('embedBtn').addEventListener('click', async () => {
       const url = new URL(location.href); url.searchParams.set('embed', '1');
       await navigator.clipboard.writeText(`<iframe src="${url.href}" title="SPHEREx sky flipbook" width="800" height="600" loading="lazy"></iframe>`);
@@ -581,7 +582,10 @@ class SpherexApp {
       const obs = await resp.json();
       if (!resp.ok) throw new Error(obs.message || 'Observation discovery failed');
       const countEl = document.getElementById('obsVisitsCount');
-      if (countEl) countEl.textContent = `${obs.n_visits_found} Visits`;
+      if (countEl) {
+        const firsts = (obs.visits || []).map(v => v.first).filter(Boolean).sort();
+        countEl.textContent = `${obs.n_visits_found} Visits` + (firsts.length ? ` · data as of ${firsts[firsts.length - 1].slice(0, 10)}` : '');
+      }
       const tbody = document.getElementById('obsTableBody');
       if (tbody) {
         tbody.replaceChildren();
@@ -791,6 +795,23 @@ class SpherexApp {
   exportGif(format = "gif") {
     const url = `/api/export/${format}?target=${encodeURIComponent(this.state.target)}&detector=${this.state.detector}&mode=${this.state.mode}&fps=${this.state.fps}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov=${this.state.fov}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
     window.open(url, '_blank', 'noopener');
+  }
+
+  flagInteresting() {
+    const note = window.prompt('Describe what looks interesting (saved only to a file on your device):');
+    if (note === null) return;
+    const t = this.pipelineData?.target || {};
+    const record = {
+      note, saved_at: new Date().toISOString(), query: this.state.target,
+      ra_deg: t.ra_deg ?? null, dec_deg: t.dec_deg ?? null, detector: this.state.detector,
+      mode: this.state.mode, source: this.pipelineData?.source || this.state.sourceMode,
+      frame_index: this.state.currentFrameIdx, url: location.href,
+      caveat: 'Volunteer note, not a validated detection. Single-exposure flicker can be wavelength change.'
+    };
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }));
+    link.download = 'spherex_flag.json'; link.click();
+    document.getElementById('scienceNotes').textContent = 'Flag saved to spherex_flag.json on your device.';
   }
 
   exportCsv() {

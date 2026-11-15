@@ -32,6 +32,7 @@ The default is Barnard's Star, D1. Select another preset to inspect individual o
 - Per-pixel wavelength-bin balancing, longest baseline, leave-one-out differences, catalogue-motion tracking, shift-and-stack, D6/D3/D1 false colour, matched-wavelength pairs, and individual-exposure playback.
 - Native-pixel aperture flux measurements with errors and observation dates; CSV export and an accessible data table.
 - Live Gaia and CatWISE reference overlays, mask display, pan/zoom, wipe comparison, playback and keyboard controls.
+- Dataset 'data as of' date, labelled reference band positions on spectra (not detections), and a volunteer 'Flag something interesting' button that saves a local JSON note (nothing is uploaded).
 - Shareable URL state, iframe embed code, GIF and real H.264 MP4 exports with observation telemetry.
 - Docker/Render configuration and GitHub Actions checks.
 
@@ -96,12 +97,15 @@ Free-tier note: Render's free plan has limited RAM and sleeps when idle; the fir
 
 ## Who built what
 
-Drawn from the Git history; **team members should confirm and expand these lines before submission.**
+Roles are from the team's "Pick Your Track – Team Roles (v2)" document; the notes on Git history show where the repository differs from those assignments.
 
-- **Shantanu Pawar:** repository setup, live Gaia DR3 overlay with proper-motion propagation, IRSA Level-2 forced-aperture SED extraction, sub-pixel astrometry, UI fixes.
-- **Malhar Tamhankar:** Track 1 data backend (IRSA query, visit grouping, per-visit frame selection, cutouts, FastAPI).
-- **Akhilesh Bhosale:** Track 2 calibration (wavelength labels from the spectral WCS, shared-band checks, matched-band mode, alignment audit).
-- **Pikq P:** real-data pipeline integration, MP4 export, spectral matching, accessible viewer, validation and deployment configuration.
+- **Track 1, data pipeline and backend: Malhar Tamhankar** (the Track 1 name is blank in the roles document; Git shows Malhar's `backend/track1` commit, merged as PR #1): IRSA queries, visit grouping, per-visit frame selection, cutouts, FastAPI.
+- **Track 2, image processing: Akhilesh Rohit Bhosale:** wavelength labels from the spectral WCS, shared-band checks, matched-band mode, alignment audit (`backend/track2_calibration`).
+- **Track 3, spectra and validation: Amrita Patil:** aperture spectra, Gaia/CatWISE overlays and validation (`backend/track3_spectrophotometry`). Git note: these commits and the merge of PR #2 (from `25024131-spec`) are recorded under Shantanu Pawar's name, so please confirm authorship.
+- **Track 4, frame stitching, viewer and demo: Shantanu Pawar:** viewer, rendering modes, exports, shareable URLs, submission.
+- **Pikq P** appears in Git with five integration commits (real-data pipeline, MP4 export, spectral matching, validation, deployment configuration) but is not listed in the roles document. Add the right name and role if this is a team member.
+
+**Team: confirm every line above before submitting.**
 
 ## Submission and sources
 
