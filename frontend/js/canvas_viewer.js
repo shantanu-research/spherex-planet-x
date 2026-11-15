@@ -37,87 +37,98 @@ class FlipbookViewer {
   }
 
   initInteractions() {
-    // Mouse Wheel Zoom
-    this.canvas.addEventListener('wheel', (e) => {
+    const canvas = this.canvas;
+    // Client (CSS) pixels -> canvas pixels; the canvas is scaled down on narrow screens.
+    const toCanvas = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    };
+    this.onWipeChange = null;
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
-      this.setZoom(this.zoomLevel * zoomFactor);
+      this.setZoom(this.zoomLevel * (e.deltaY < 0 ? 1.15 : 0.87));
     }, { passive: false });
 
-    // Mouse Drag Pan & Wipe Interaction
-    this.canvas.addEventListener('mousedown', (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      const clickX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-      if (this.showWipe && Math.abs(clickX - this.canvas.width * this.wipeRatio) < 22) {
+    // Pointer events cover mouse, touch and pen.
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const pt = toCanvas(e);
+      const wipeHitPx = e.pointerType === 'mouse' ? 22 : 40;
+      if (this.wipeActive() && Math.abs(pt.x - canvas.width * this.wipeRatio) < wipeHitPx) {
         this.isDraggingWipe = true;
-        this.canvas.style.cursor = 'ew-resize';
-        return;
-      }
-      if (e.button === 0) { // Left click
+        canvas.style.cursor = 'ew-resize';
+      } else {
         this.isDragging = true;
-        this.dragStart = { x: e.clientX - this.panOffset.x, y: e.clientY - this.panOffset.y };
-        this.canvas.style.cursor = 'grabbing';
+        this.dragStart = { x: pt.x - this.panOffset.x, y: pt.y - this.panOffset.y };
+        canvas.style.cursor = 'grabbing';
       }
+      this.activePointer = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* synthetic events */ }
+      e.preventDefault();
     });
 
-    window.addEventListener('mousemove', (e) => {
+    const onMove = (e) => {
+      if (this.activePointer !== undefined && e.pointerId !== this.activePointer) return;
       if (this.isDraggingWipe) {
-        const rect = this.canvas.getBoundingClientRect();
-        const curX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-        this.wipeRatio = Math.max(0.05, Math.min(0.95, curX / this.canvas.width));
-        this.render();
-        return;
-      }
-      if (this.isDragging) {
-        this.panOffset = {
-          x: e.clientX - this.dragStart.x,
-          y: e.clientY - this.dragStart.y
-        };
+        this.setWipeRatio(toCanvas(e).x / canvas.width);
+      } else if (this.isDragging) {
+        const pt = toCanvas(e);
+        this.panOffset = { x: pt.x - this.dragStart.x, y: pt.y - this.dragStart.y };
         this.render();
       }
-    });
-
-    window.addEventListener('mouseup', () => {
+    };
+    const onUp = (e) => {
+      if (this.activePointer !== undefined && e.pointerId !== this.activePointer) return;
       this.isDraggingWipe = false;
-      if (this.isDragging) {
-        this.isDragging = false;
-        this.canvas.style.cursor = 'crosshair';
-      }
-    });
+      this.isDragging = false;
+      this.activePointer = undefined;
+      canvas.style.cursor = 'crosshair';
+    };
+    canvas.addEventListener('pointermove', onMove);
+    window.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
 
-    // Hover Coordinate Inspector
-    this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.currentFrame || !this.coordReadoutEl) return;
-      const rect = this.canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      // Invert pan and zoom
-      const cWidth = this.canvas.width;
-      const cHeight = this.canvas.height;
+    // Hover coordinate inspector
+    canvas.addEventListener('pointermove', (e) => {
+      if (!this.currentFrame || !this.coordReadoutEl || this.isDraggingWipe) return;
+      const pt = toCanvas(e);
+      const cWidth = canvas.width, cHeight = canvas.height;
       const centerX = cWidth / 2 + this.panOffset.x;
       const centerY = cHeight / 2 + this.panOffset.y;
-
-      const normX = (mouseX - centerX) / (cWidth * this.zoomLevel) + 0.5;
-      const normY = (mouseY - centerY) / (cHeight * this.zoomLevel) + 0.5;
-
-      const w = (this.currentFrame && this.currentFrame.rgb_pixels) ? this.currentFrame.rgb_pixels[0].length : 64;
-      const h = (this.currentFrame && this.currentFrame.rgb_pixels) ? this.currentFrame.rgb_pixels.length : 64;
-
+      const normX = (pt.x - centerX) / (cWidth * this.zoomLevel) + 0.5;
+      const normY = (pt.y - centerY) / (cHeight * this.zoomLevel) + 0.5;
+      const rows = this.currentFrame.rgb_pixels;
+      const w = rows ? rows[0].length : 64;
+      const h = rows ? rows.length : 64;
       const pxX = Math.floor(normX * w);
       const pxY = Math.floor(normY * h);
-
-      const pixelScale = (this.currentFrame && this.currentFrame.pixel_scale_arcsec) ? this.currentFrame.pixel_scale_arcsec : 6.15;
-      const fovArcmin = (this.currentFrame && this.currentFrame.fov_arcmin) ? this.currentFrame.fov_arcmin : ((w * pixelScale) / 60.0);
-
+      const pixelScale = this.currentFrame.pixel_scale_arcsec || 6.15;
+      const fovArcmin = this.currentFrame.fov_arcmin || ((w * pixelScale) / 60.0);
       if (pxX >= 0 && pxX < w && pxY >= 0 && pxY < h) {
-        const dArcsecX = ((w-1) / 2 - pxX) * pixelScale;
-        const dArcsecY = ((h-1) / 2 - pxY) * pixelScale;
-        this.coordReadoutEl.textContent = `PX [${pxX}, ${pxY}] | dRA*cosDec ${dArcsecX > 0 ? '+' : ''}${dArcsecX.toFixed(1)}" | dDec ${dArcsecY > 0 ? '+' : ''}${dArcsecY.toFixed(1)}" | ${fovArcmin.toFixed(1)}' FOV`;
+        const dx = ((w - 1) / 2 - pxX) * pixelScale;
+        const dy = ((h - 1) / 2 - pxY) * pixelScale;
+        this.coordReadoutEl.textContent = `PX [${pxX}, ${pxY}] | dRA*cosDec ${dx > 0 ? '+' : ''}${dx.toFixed(1)}" | dDec ${dy > 0 ? '+' : ''}${dy.toFixed(1)}" | ${fovArcmin.toFixed(1)}' FOV`;
       } else {
         this.coordReadoutEl.textContent = `FOV ${fovArcmin.toFixed(1)}' | ${pixelScale.toFixed(2)}"/px`;
       }
     });
+  }
+
+  wipeActive() {
+    return this.showWipe && this.allFrames && this.allFrames.length > 1;
+  }
+
+  setWipeRatio(ratio) {
+    this.wipeRatio = Math.max(0.05, Math.min(0.95, ratio));
+    this.render();
+    if (this.onWipeChange) this.onWipeChange(this.wipeRatio);
   }
 
   setZoom(newZoom) {
@@ -185,59 +196,36 @@ class FlipbookViewer {
       context.fillStyle = '#ff39ab';
       this.currentFrame.mask.forEach((row,y) => row.forEach((v,x) => { if(v) context.fillRect(x,y,1,1); }));
     }
-    // Apply Zoom & Pan Transform
+    const applyView = () => {
+      this.ctx.translate(cWidth / 2 + this.panOffset.x, cHeight / 2 + this.panOffset.y);
+      this.ctx.scale(this.zoomLevel, this.zoomLevel);
+      this.ctx.translate(-cWidth / 2, -cHeight / 2);
+    };
+    const wipeX = cWidth * this.wipeRatio;
+
+    if (this.wipeActive()) {
+      // Split comparison in screen space: first frame on the left, current frame on the right.
+      const baseOff = this._createOffscreenFromPixels(this.allFrames[0].rgb_pixels) || currentOff;
+      if (this.showMask && this.allFrames[0].mask) {
+        const bctx = baseOff.canvas.getContext('2d');
+        bctx.fillStyle = '#ff39ab';
+        this.allFrames[0].mask.forEach((row, y) => row.forEach((v, x) => { if (v) bctx.fillRect(x, y, 1, 1); }));
+      }
+      for (const [off, x0, x1] of [[baseOff, 0, wipeX], [currentOff, wipeX, cWidth]]) {
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(x0, 0, x1 - x0, cHeight);
+        this.ctx.clip();
+        applyView();
+        this.ctx.drawImage(off.canvas, 0, 0, cWidth, cHeight);
+        this.ctx.restore();
+      }
+    }
+
+    // Zoom & pan transform for the image and overlays
     this.ctx.save();
-    this.ctx.translate(cWidth / 2 + this.panOffset.x, cHeight / 2 + this.panOffset.y);
-    this.ctx.scale(this.zoomLevel, this.zoomLevel);
-    this.ctx.translate(-cWidth / 2, -cHeight / 2);
-
-    if (this.showWipe && this.allFrames && this.allFrames.length > 1) {
-      // Split Wipe Mode: Compare Frame 0 (Baseline) against currentFrame (Active)
-      const baseFrame = this.allFrames[0];
-      const baseOff = this._createOffscreenFromPixels(baseFrame.rgb_pixels) || currentOff;
-      const wipeX = cWidth * this.wipeRatio;
-
-      // 1. Draw Baseline Frame on Left
-      this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.rect(0, 0, wipeX, cHeight);
-      this.ctx.clip();
-      this.ctx.drawImage(baseOff.canvas, 0, 0, cWidth, cHeight);
-      this.ctx.restore();
-
-      // 2. Draw Active Frame on Right
-      this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.rect(wipeX, 0, cWidth - wipeX, cHeight);
-      this.ctx.clip();
-      this.ctx.drawImage(currentOff.canvas, 0, 0, cWidth, cHeight);
-      this.ctx.restore();
-
-      // 3. Draw Vertical Wipe Divider Line
-      this.ctx.save();
-      this.ctx.strokeStyle = '#a2d4c3';
-      this.ctx.lineWidth = 2 / this.zoomLevel;
-      this.ctx.beginPath();
-      this.ctx.moveTo(wipeX, 0);
-      this.ctx.lineTo(wipeX, cHeight);
-      this.ctx.stroke();
-
-      // Wipe drag handle
-      const handleR = 12 / this.zoomLevel;
-      this.ctx.fillStyle = '#09090b';
-      this.ctx.strokeStyle = '#a2d4c3';
-      this.ctx.beginPath();
-      this.ctx.arc(wipeX, cHeight / 2, handleR, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `${Math.max(8, 9 / this.zoomLevel)}px "JetBrains Mono", monospace`;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText('◧', wipeX, cHeight / 2);
-      this.ctx.restore();
-    } else {
-      // Draw main pixel array
+    applyView();
+    if (!this.wipeActive()) {
       this.ctx.drawImage(currentOff.canvas, 0, 0, cWidth, cHeight);
     }
 
@@ -249,7 +237,7 @@ class FlipbookViewer {
       this.ctx.save();
       this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; // Clean silver
       this.ctx.lineWidth = 1 / this.zoomLevel;
-      this.ctx.font = `${Math.max(7, 8 / this.zoomLevel)}px "JetBrains Mono", monospace`;
+      this.ctx.font = `${Math.max(7, 8 / this.zoomLevel)}px "Fira Code", monospace`;
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
 
       for (let i = 0; i < Math.min(12, this.fieldStars.length); i++) {
@@ -270,7 +258,7 @@ class FlipbookViewer {
     // 2. Draw Motion Trajectory Trail across all epochs (when enabled)
     if (this.showTrail && this.allFrames && this.allFrames.length > 1) {
       this.ctx.save();
-      this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)'; // Vibranium kinetic purple
+      this.ctx.strokeStyle = 'rgba(46, 150, 245, 0.85)'; // Vibranium kinetic purple
       this.ctx.lineWidth = 1.5 / this.zoomLevel;
       this.ctx.setLineDash([3 / this.zoomLevel, 3 / this.zoomLevel]);
 
@@ -293,7 +281,7 @@ class FlipbookViewer {
         if (f.target_pos_px) {
           const tx = f.target_pos_px[0] * scaleX;
           const ty = f.target_pos_px[1] * scaleY;
-          this.ctx.fillStyle = (f.visit_id === this.currentFrame.visit_id) ? '#a2d4c3' : 'rgba(162, 212, 195, 0.4)';
+          this.ctx.fillStyle = (f.visit_id === this.currentFrame.visit_id) ? '#EAFE07' : 'rgba(234, 254, 7, 0.4)';
           this.ctx.beginPath();
           this.ctx.arc(tx, ty, 3 / this.zoomLevel, 0, 2 * Math.PI);
           this.ctx.fill();
@@ -308,9 +296,9 @@ class FlipbookViewer {
       const ry = this.reticlePos.y * scaleY;
       
       this.ctx.save();
-      this.ctx.strokeStyle = '#a2d4c3'; // Selection accent
+      this.ctx.strokeStyle = '#EAFE07'; // Selection accent
       this.ctx.lineWidth = 1.5 / this.zoomLevel;
-      this.ctx.shadowColor = '#a2d4c3';
+      this.ctx.shadowColor = '#EAFE07';
       this.ctx.shadowBlur = 0;
 
       const rRadius = 14 / this.zoomLevel;
@@ -335,7 +323,7 @@ class FlipbookViewer {
       this.ctx.stroke();
 
       // Reticle Label (Clean White)
-      this.ctx.font = `${Math.max(9, 10 / this.zoomLevel)}px "JetBrains Mono", monospace`;
+      this.ctx.font = `${Math.max(9, 10 / this.zoomLevel)}px "Fira Code", monospace`;
       this.ctx.fillStyle = '#ffffff';
       this.ctx.shadowBlur = 0;
       this.ctx.fillText(`${this.targetName}`, rx + rRadius + 5, ry - 5);
@@ -344,6 +332,34 @@ class FlipbookViewer {
 
     this.ctx.restore(); // Restore zoom/pan context for UI HUD overlays
 
+    if (this.wipeActive()) {
+      this.ctx.save();
+      this.ctx.strokeStyle = '#EAFE07';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(wipeX, 0);
+      this.ctx.lineTo(wipeX, cHeight);
+      this.ctx.stroke();
+      this.ctx.fillStyle = '#07173F';
+      this.ctx.beginPath();
+      this.ctx.arc(wipeX, cHeight / 2, 14, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+      this.ctx.fillStyle = '#EAFE07';
+      this.ctx.beginPath();
+      this.ctx.moveTo(wipeX - 9, cHeight / 2); this.ctx.lineTo(wipeX - 3, cHeight / 2 - 6); this.ctx.lineTo(wipeX - 3, cHeight / 2 + 6); this.ctx.closePath();
+      this.ctx.moveTo(wipeX + 9, cHeight / 2); this.ctx.lineTo(wipeX + 3, cHeight / 2 - 6); this.ctx.lineTo(wipeX + 3, cHeight / 2 + 6); this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.font = '11px "Fira Code", monospace';
+      this.ctx.fillStyle = '#FFFFFF';
+      this.ctx.textBaseline = 'top';
+      this.ctx.textAlign = 'right';
+      this.ctx.fillText('FIRST', wipeX - 8, 52);
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText('CURRENT', wipeX + 8, 52);
+      this.ctx.restore();
+    }
+
     // 4. Draw North-Up / East-Left Astrometric Compass & Scale (Fixed in HUD viewport space)
     if (this.showCompass) {
       const cx = 35;
@@ -351,7 +367,7 @@ class FlipbookViewer {
       this.ctx.save();
       this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
       this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      this.ctx.font = '10px "JetBrains Mono", monospace';
+      this.ctx.font = '10px "Fira Code", monospace';
       this.ctx.lineWidth = 1.5;
 
       // North Arrow (pointing UP)

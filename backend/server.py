@@ -81,8 +81,18 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             self._handle_get()
         except ValueError as exc:
             self._send_json({"status": "error", "message": str(exc)}, status=400)
-        except Exception:
-            self._send_json({"status": "unavailable", "message": "Processing failed. Please retry or select another target."}, status=503)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            sys.stderr.flush()
+            name = type(exc).__name__
+            if name in ("HTTPStatusError", "ConnectError", "ConnectTimeout", "ReadTimeout", "RemoteProtocolError", "TimeoutException"):
+                detail = getattr(getattr(exc, "response", None), "status_code", None)
+                message = ("The NASA/IPAC archive (IRSA) did not respond" + (f" (HTTP {detail})" if detail else "")
+                           + ". Live archive searches depend on that service; try again shortly, or choose a test-target preset, which uses installed observations.")
+            else:
+                message = f"Processing failed ({name}). Please retry or select another target."
+            self._send_json({"status": "unavailable", "message": message}, status=503)
 
     def _handle_get(self):
         parsed = urllib.parse.urlparse(self.path)

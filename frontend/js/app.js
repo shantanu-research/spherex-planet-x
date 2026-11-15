@@ -285,6 +285,18 @@ class SpherexApp {
     });
     this.setupOverlayToggle('toggleTrailBtn', 'showTrail');
     this.setupOverlayToggle('toggleWipeBtn', 'showWipe');
+    const wipeRange = document.getElementById('wipeRange');
+    const syncWipe = () => {
+      const active = this.viewer.wipeActive();
+      document.getElementById('wipeControl').hidden = !this.viewer.showWipe;
+      wipeRange.disabled = !active;
+      wipeRange.value = Math.round(this.viewer.wipeRatio * 100);
+      document.getElementById('wipeValue').textContent = active ? `${wipeRange.value}%` : 'needs 2+ frames';
+    };
+    this.syncWipe = syncWipe;
+    this.viewer.onWipeChange = syncWipe;
+    document.getElementById('toggleWipeBtn').addEventListener('click', syncWipe);
+    wipeRange.addEventListener('input', () => this.viewer.setWipeRatio(Number(wipeRange.value) / 100));
 
     // 7. Zoom Toolbar
     const zoomIn = document.getElementById('zoomInBtn');
@@ -313,6 +325,7 @@ class SpherexApp {
         this.state.fps = parseInt(e.target.value, 10);
         document.getElementById('fpsValue').textContent = `${this.state.fps} FPS`;
         this.updateUrlState();
+        this.updateViewerPipe();
         if (this.state.isPlaying) {
           this.stopPlayback();
           this.startPlayback();
@@ -383,9 +396,10 @@ class SpherexApp {
 
     window.addEventListener('keydown', (e) => {
       // Ignore if user is typing in an input or select
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
-        return;
-      }
+      const tag = document.activeElement?.tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+      if (e.code === 'Space' && ['BUTTON', 'A', 'SUMMARY'].includes(tag)) return;
+      if (document.querySelector('dialog[open]')) return;
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -548,6 +562,7 @@ class SpherexApp {
       this.spectrumChart.setData(data.spectrophotometry);
 
       this.updatePipelineStrip();
+      if (this.syncWipe) this.syncWipe();
 
       // Rebuild dynamic visit scrubber buttons
       this.rebuildVisitScrubber();
@@ -569,7 +584,7 @@ class SpherexApp {
       }
     } catch (err) {
       if (err.name === 'AbortError' || this.pendingRequest !== controller) return;
-      console.error('Failed to load pipeline data:', err);
+      console.warn('Pipeline data unavailable:', err.message);
       if (statusEl) statusEl.textContent = 'Observations unavailable';
       this.pipelineData = null; this.updatePipelineStrip(err.message || 'Request failed.');
       if (message) {
@@ -701,7 +716,7 @@ class SpherexApp {
     this.stopPlayback();
     this.state.isPlaying = true;
     this.updatePlayPauseIcon();
-    const interval = Math.max(80, 1000 / this.state.fps);
+    const interval = 1000 / Math.max(1, this.state.fps);
     this.playbackTimer = setInterval(() => {
       this.stepFrame(1);
     }, interval);
@@ -823,7 +838,7 @@ class SpherexApp {
     const data = this.pipelineData;
     const enabled = document.getElementById('catalogToggle').checked;
     const status = document.getElementById('catalogStatus');
-    if (!data) return;
+    if (!data) { status.textContent = enabled ? 'Load a field with frames to request catalogue references.' : ''; return; }
     this.viewer.showStars = enabled;
     document.getElementById('toggleStarsBtn').classList.toggle('active', enabled);
     if (!enabled) { this.renderFrame(this.state.currentFrameIdx); status.textContent = ''; return; }
@@ -842,9 +857,32 @@ class SpherexApp {
     } catch (error) { status.textContent = `Catalogue references unavailable: ${error.message}`; this.catalogNote = 'catalogue overlay unavailable'; this.updatePipelineStrip(); }
   }
 
-  exportGif(format = "gif") {
+  async exportGif(format = "gif") {
+    const notes = document.getElementById('scienceNotes');
+    const btn = document.getElementById(format === 'mp4' ? 'exportMp4Btn' : 'exportGifBtn');
+    if (!this.pipelineData) { notes.textContent = `Nothing to export: load a field with frames first.`; return; }
     const url = `/api/export/${format}?target=${encodeURIComponent(this.state.target)}&detector=${this.state.detector}&mode=${this.state.mode}&fps=${this.state.fps}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov=${this.state.fov}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
-    window.open(url, '_blank', 'noopener');
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+    notes.textContent = `Rendering ${format.toUpperCase()}…`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        let message = `Export failed (${resp.status})`;
+        try { message = (await resp.json()).message || message; } catch (_) { /* not JSON */ }
+        throw new Error(message);
+      }
+      const blob = await resp.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `spherex_${this.state.target.replace(/[^a-z0-9]+/gi, '_').toLowerCase()}_${this.state.detector}_${this.state.mode}.${format}`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+      notes.textContent = `${format.toUpperCase()} downloaded (${(blob.size / 1024).toFixed(0)} KB).`;
+    } catch (err) {
+      notes.textContent = `Export unavailable: ${err.message}`;
+    } finally {
+      btn.disabled = false; btn.removeAttribute('aria-busy');
+    }
   }
 
   flagInteresting() {
@@ -865,8 +903,8 @@ class SpherexApp {
   }
 
   exportCsv() {
-    if (!this.pipelineData || !this.pipelineData.spectrophotometry) return;
-    const pts = this.pipelineData.spectrophotometry.spectrum;
+    const pts = this.pipelineData?.spectrophotometry?.spectrum || [];
+    if (!pts.length) { document.getElementById('scienceNotes').textContent = 'No measured spectrum to export for this field and detector.'; return; }
     let csv = "channel_id,detector,channel_in_detector,wavelength_um,bandwidth_um,flux_mjy,flux_err_mjy,snr,molecular_feature\n";
     for (const p of pts) {
       csv += `${p.channel_id},${p.detector},${p.channel_in_detector},${p.wavelength_um},${p.bandwidth_um},${p.flux_mjy},${p.flux_err_mjy},${p.snr},${p.molecular_feature || ""}\n`;
@@ -897,4 +935,6 @@ class SpherexApp {
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   window.spherexApp = new SpherexApp();
+  // Canvas text is rasterised immediately; redraw once web fonts have loaded.
+  document.fonts?.ready.then(() => window.spherexApp.viewer.render());
 });
