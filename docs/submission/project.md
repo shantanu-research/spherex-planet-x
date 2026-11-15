@@ -10,6 +10,6 @@ The supplied collection has 42 FITS files across five fields; 41 have usable pix
 
 Known scientific limits include masked bright cores, no PSF homogenization/aperture correction, unmodelled resampling covariance and calibration systematics, and tracking without annual parallax. No real-data flicker-suppression precision, molecular identification or Planet X detection is claimed.
 
-The tool is deployed on Render (free plan) at https://spherex-planet-x-i008.onrender.com and was verified on 2026-11-15; the first request after idle can be slow. This description is ready for team review; an official challenge submission has not been made.
+The tool is deployed on Google Cloud Run at https://project-flipbook-657145286920.asia-south1.run.app and was verified on 2026-11-15. This description is ready for team review; an official challenge submission has not been made.
 
 Sources: NASA SPHEREx observations from IRSA/Caltech/IPAC; team-supplied Google Drive project files; Gaia DR3; CatWISE2020; CDS Sesame. Dependencies include Astropy, NumPy, SciPy, HTTPX, Pillow and FFmpeg. AI assistance was used for code, testing and documentation. Confirm team attribution and the official competition's current requirements before submission.

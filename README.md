@@ -2,7 +2,7 @@
 
 # Project Flipbook
 
-**Live:** https://spherex-planet-x-i008.onrender.com
+**Live:** https://project-flipbook-657145286920.asia-south1.run.app
 
 A NASA Space Apps project for inspecting SPHEREx infrared observations without confusing wavelength changes with temporal variability. Real FITS data and simulations are separate, explicitly labelled sources.
 
@@ -96,9 +96,9 @@ docker run --rm -p 8080:8080 spherex-flipbook
 
 The image downloads and verifies project observations during its build and installs FFmpeg. Import this repository into Render as a Blueprint using `render.yaml`; `/api/health` is the readiness endpoint. Live requests need outbound HTTPS and a writable cache. No secret is required for public astronomical archives.
 
-Free-tier note: Render's free plan has limited RAM and sleeps when idle; the first request after sleeping is slow. Open `/api/health` to warm it before a demo.
+It also runs on Google Cloud Run straight from the Dockerfile: `gcloud run deploy project-flipbook --source . --region asia-south1 --memory 2Gi --min-instances 1 --allow-unauthenticated`. One warm instance means no cold start.
 
-**Live demo:** https://spherex-planet-x-i008.onrender.com (Render free plan, Singapore). Verified on 2026-11-15: `/`, `/api/health`, `/api/targets`, `/api/frames` and `/api/export/mp4` return 200. The free plan sleeps when idle, so the first request after a pause is slow; open `/api/health` to warm it. Gaia and CatWISE overlays depend on those archives being reachable from Render and have not been verified there.
+**Live demo:** https://project-flipbook-657145286920.asia-south1.run.app (Google Cloud Run, Mumbai, one warm instance). Verified on 2026-11-15: `/`, `/api/health`, `/api/frames`, `/api/export/gif` and `/api/export/mp4` return 200 in under two seconds. Gaia and CatWISE overlays depend on those archives being reachable and have not been verified there.
 
 ## Mission patch and branding
 
