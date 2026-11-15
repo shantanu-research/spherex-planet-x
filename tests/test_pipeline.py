@@ -189,6 +189,34 @@ class TestSpherexPipeline(unittest.TestCase):
             self.assertEqual(shot["band"], label_exposure_spectral_channel("D6", shot["lambda_at_target"]))
         self.assertIn("stack", res["frames"][0])
 
+    def test_track2_skips_edge_channel_and_off_image_shots(self):
+        """Shots in edge channel 0/18 or with the target off the image are labelled but not stacked."""
+        from backend.track2_calibration.spectral_labels import channel_info
+
+        sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=16)
+        baseline = perform_band_balanced_stacking(sim["visits"], "D6")
+        base_used = [s["n_shots_used"] for s in baseline["visit_stacks"]]
+        for s in baseline["visit_stacks"]:
+            self.assertEqual(s["n_shots_excluded"], {"edge_channel": 0, "off_image": 0})
+
+        sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=16)
+        exps = sim["visits"][0]["exposures"]
+        # Like the real WISE 0855 D6 shot at 4.4178 um: just below channel 1 (edge channel 0)
+        edge, off = exps[0], exps[1]
+        edge["lambda_at_target"] = channel_info("D6", 1)["lambda_min"] - 0.002
+        edge["channel"] = None
+        off["on_image"] = False
+
+        res = perform_band_balanced_stacking(sim["visits"], "D6")
+        stack0 = res["visit_stacks"][0]
+        self.assertEqual(stack0["n_shots_excluded"], {"edge_channel": 1, "off_image": 1})
+        self.assertEqual(edge["band"], 1)  # still labelled with the nearest band...
+        self.assertEqual(edge["excluded_reason"], "edge_channel")  # ...but not stacked
+        self.assertEqual(off["excluded_reason"], "off_image")
+        self.assertLessEqual(stack0["n_shots_used"], base_used[0])
+        self.assertEqual(stack0["n_shots_used"], sum(stack0["n_shots_per_band"].values()))
+        self.assertTrue(all(e["excluded_reason"] is None for v in sim["visits"][1:] for e in v["exposures"]))
+
     def test_track2_matched_band_and_sub_bands(self):
         """Matched-band frames all come from the chosen band; sub-bands hold ~4 bands each."""
         from backend.pipeline import execute_pipeline

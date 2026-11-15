@@ -44,6 +44,7 @@ from backend.data_loader import target_catalog, SPHEREX_BANDS
 STACK_MANIFEST_FIELDS = (
     "visit_id", "detector", "bands_used", "n_bands", "n_shots_per_band", "lambda_eff",
     "lambda_eff_measured", "comparable", "bands_present", "n_bands_present", "n_shots", "n_shots_used",
+    "n_shots_excluded",
 )
 
 
@@ -63,7 +64,8 @@ def build_track2_manifest(stack_res: Dict[str, Any], visits: List[Dict[str, Any]
                 "mjd": e.get("mjd_mid"),
                 "lambda_at_target": e.get("lambda_at_target"),
                 "band": e.get("band"),
-                "used_in_stack": e.get("band") in used.get(v["visit_id"], set()),
+                "used_in_stack": not e.get("excluded_reason") and e.get("band") in used.get(v["visit_id"], set()),
+                "excluded_reason": e.get("excluded_reason"),
             })
     return {
         "status": stack_res.get("status"),

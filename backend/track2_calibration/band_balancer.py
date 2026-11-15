@@ -197,12 +197,14 @@ def perform_band_balanced_stacking(
     # Track channel occupancy per visit
     visit_channel_sets = []
     visit_channel_cubes = []
+    visit_excluded: List[Dict[str, int]] = []
 
     for v_idx, visit in enumerate(visits_exposures):
         exps = visit.get("exposures", [])
         channels_present = set()
         channel_buckets: Dict[int, List[Dict[str, Any]]] = {b: [] for b in range(1, 18)}
-        
+        excluded = {"edge_channel": 0, "off_image": 0}
+
         for exp in exps:
             # Step 1: every shot carries lambda_at_target and band (manifest fields)
             lam = exp.get("lambda_at_target", exp.get("wavelength_um"))
@@ -213,11 +215,29 @@ def perform_band_balanced_stacking(
             exp["band"] = ch
             if lam is not None:
                 exp["lambda_at_target"] = lam
+
+            # Leave out shots that would bias the band mix: the target landed in edge
+            # channel 0 or 18 (outside channels 1-17, e.g. 4 of 234 real DR1 cutouts),
+            # or off the image entirely. They keep their labels but are not stacked.
+            in_range = exp.get("in_nominal_range")
+            if in_range is None and lam is not None:
+                in_range = band_from_wavelength(detector, lam)["in_nominal_range"]
+            reason = None
+            if exp.get("on_image") is False:
+                reason = "off_image"
+            elif in_range is False:
+                reason = "edge_channel"
+            exp["excluded_reason"] = reason
+            if reason:
+                excluded[reason] += 1
+                continue
+
             channels_present.add(ch)
             channel_buckets[ch].append(exp)
-            
+
         visit_channel_sets.append(channels_present)
         visit_channel_cubes.append(channel_buckets)
+        visit_excluded.append(excluded)
 
     # Step 3: bands shared by every visit. All visits are stacked from exactly these
     # bands so the colour mix is identical. There is no fallback to "all bands": if few
@@ -388,6 +408,7 @@ def perform_band_balanced_stacking(
             "n_bands_present": len(bands_present),
             "n_shots": len(visit.get("exposures", [])),
             "n_shots_used": sum(n_shots_per_band.values()),
+            "n_shots_excluded": dict(visit_excluded[v_idx]),
             "visit_index": visit["visit_index"],
             "mjd_mid": visit["mjd_mid"],
             "date_utc": visit["date_utc"],
