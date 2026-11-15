@@ -1,3 +1,5 @@
+<img src="frontend/assets/mission-patch.svg" alt="SPHEREx Sky Flipbook mission patch" width="160" align="right">
+
 # SPHEREx Sky Flipbook
 
 **Live:** https://spherex-planet-x-i008.onrender.com
@@ -97,6 +99,14 @@ The image downloads and verifies project observations during its build and insta
 Free-tier note: Render's free plan has limited RAM and sleeps when idle; the first request after sleeping is slow. Open `/api/health` to warm it before a demo.
 
 **Live demo:** https://spherex-planet-x-i008.onrender.com (Render free plan, Singapore). Verified on 2026-11-15: `/`, `/api/health`, `/api/targets`, `/api/frames` and `/api/export/mp4` return 200. The free plan sleeps when idle, so the first request after a pause is slow; open `/api/health` to warm it. Gaia and CatWISE overlays depend on those archives being reachable from Render and have not been verified there.
+
+## Mission patch and branding
+
+The team patch (`frontend/assets/mission-patch.svg`) is an original design: three flipbook frames show one star at three epochs, the arrow is its proper motion, the six-colour band is SPHEREx's D1–D6 detectors (0.75–5.0 µm), and the inner ring names the four team members. The interface follows the NASA Space Apps brand guidelines (June 2026): Deep Blue and Electric Blue backgrounds, Neon Yellow for interactive accents, Fira Sans, Overpass and Fira Code.
+
+- NASA Space Apps Challenge logo: unaltered, extracted from the official brand guide, shown as "Built for".
+- SPHEREx mission logo: from the Caltech SPHEREx Science Center, used under its image use policy with the credit "Courtesy NASA/JPL-Caltech".
+- The NASA insignia, logotype and seal are not used: they require NASA's written permission, and the Space Apps guide says not to use NASA official branding. The site states that it is an unofficial project with no endorsement implied.
 
 ## Who built what
 

@@ -3,29 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPHEREx "Planet X" Discovery Engine & Visualizer</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="css/style.css?v=20261114b">
+  <title>SPHEREx Sky Flipbook</title>
+  <meta name="description" content="Team Overdrive's NASA Space Apps Challenge 2026 project: a multi-epoch viewer for SPHEREx infrared sky images.">
+  <link rel="icon" type="image/svg+xml" href="assets/mission-patch.svg">
+  <link rel="stylesheet" href="css/style.css?v=20261115p">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@700;900&family=Fira+Code:wght@400;500;700&family=Overpass:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 </head>
 <body>
 <a class="skip-link" href="#workbenchHeading">Skip to image workbench</a>
 
+  <!-- Portal utility bar -->
+  <div class="portal-bar" role="note">
+    <span><strong>Unofficial hackathon project.</strong> Built by Team Overdrive for the NASA Space Apps Challenge 2026. Not a NASA, JPL, Caltech or IPAC website.</span>
+    <nav aria-label="External resources" class="portal-links">
+      <a href="https://irsa.ipac.caltech.edu/Missions/spherex.html" rel="noopener">SPHEREx data at IRSA</a>
+      <a href="https://github.com/shantanu-research/spherex-planet-x" rel="noopener">Source code</a>
+      <a href="#mission">Mission patches</a>
+    </nav>
+  </div>
+
   <!-- Top Master Mission HUD Header -->
   <header class="hud-header">
     <div class="brand-section">
-      <div class="logo-badge">
-        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M12 3v6m0 6v6M3 12h6m6 0h6"/>
-        </svg>
-        SPHEREx
-      </div>
+      <img class="header-patch" src="assets/mission-patch.svg" width="64" height="64" alt="">
       <div>
-        <h1 class="mission-title">Planet X workbench</h1>
-        <div class="mission-subtitle">NASA Space Apps 2026 · Multi-epoch image comparison</div>
+        <h1 class="mission-title">SPHEREx Sky Flipbook</h1>
+        <div class="mission-subtitle">Planet X and SPHEREx challenge · Multi-epoch infrared sky viewer</div>
       </div>
     </div>
 
@@ -53,6 +58,10 @@
 
     <!-- System Status & Shortcuts Trigger -->
     <div class="header-actions">
+      <a class="spaceapps-lockup" href="https://www.spaceappschallenge.org/" rel="noopener" aria-label="NASA Space Apps Challenge website">
+        <span class="lockup-label">Built for</span>
+        <img src="assets/spaceapps-logo-2026-white.png" width="176" height="74" alt="NASA Space Apps Challenge">
+      </a>
       <div class="archive-pill" title="Dynamic Pipeline R7 Discovery">
         <span class="status-indicator-dot"></span>
         <span id="systemStatusText" role="status">Ready</span>
@@ -528,6 +537,42 @@
     </section>
 
   </main>
+  <section id="mission" class="insignia-band" aria-labelledby="insigniaHeading">
+    <h2 id="insigniaHeading">Mission patches</h2>
+    <div class="insignia-grid">
+      <figure class="insignia">
+        <div class="orbit-holder"><img src="assets/mission-patch.svg" width="220" height="220" alt="Team Overdrive mission patch: three flipbook frames with a star moving across them, a D1 to D6 spectrum band and the names Malhar, Akhilesh, Amrita and Shantanu."></div>
+        <figcaption>
+          <strong>SPHEREx Sky Flipbook</strong>
+          <span>Team Overdrive's patch, an original design. Three frames show one star at three epochs; the arrow is its proper motion; the band shows SPHEREx's six detectors from 0.75 to 5.0 µm.</span>
+          <a href="assets/mission-patch.svg" download>Download patch (SVG)</a>
+        </figcaption>
+      </figure>
+      <figure class="insignia">
+        <div class="orbit-holder orbit-holder--mission"><img src="assets/spherex-logo.png" width="220" height="220" alt="SPHEREx mission logo: the SPHEREx telescope inside a broken ring, above the word SPHEREx."></div>
+        <figcaption>
+          <strong>SPHEREx mission</strong>
+          <span>NASA's SPHEREx has mapped the whole sky every six months since May 2025 in 102 near-infrared colours. Logo courtesy NASA/JPL-Caltech; shown for identification only, with no endorsement implied.</span>
+          <a href="https://spherex.caltech.edu/" rel="noopener">SPHEREx mission site</a>
+        </figcaption>
+      </figure>
+      <figure class="insignia">
+        <div class="orbit-holder orbit-holder--event"><img src="assets/spaceapps-logo-2026-white.png" width="220" height="92" alt="NASA Space Apps Challenge logo"></div>
+        <figcaption>
+          <strong>NASA Space Apps Challenge 2026</strong>
+          <span>Challenge: Planet X and SPHEREx. Pune local event, 14–15 November 2026.</span>
+          <a href="https://www.spaceappschallenge.org/" rel="noopener">Space Apps Challenge</a>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer class="portal-footer">
+    <p><strong>Data:</strong> NASA SPHEREx Level-2 images via NASA/IPAC Infrared Science Archive (IRSA); Gaia DR3 (ESA); CatWISE2020; CDS Sesame. Software: Astropy, NumPy, SciPy, Pillow, FFmpeg.</p>
+    <p><strong>Credits:</strong> SPHEREx logo courtesy NASA/JPL-Caltech. NASA Space Apps Challenge logo used per the Space Apps brand guidelines. Mission patch © Team Overdrive.</p>
+    <p>This is a student hackathon project. It is not affiliated with or endorsed by NASA, JPL, Caltech or IPAC. Images and measurements are provided as-is for exploration; see the <a href="https://github.com/shantanu-research/spherex-planet-x#scientific-interpretation">scientific limits</a>.</p>
+  </footer>
+
 
   <!-- Keyboard Shortcuts Modal -->
   <dialog id="shortcutsModal" aria-labelledby="shortcutsTitle">
