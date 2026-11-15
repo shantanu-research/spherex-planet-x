@@ -4,7 +4,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 from scipy.ndimage import map_coordinates
-from backend.track1 import archive, cutouts, visits
+from backend.irsa import archive, cutouts, visits
 
 
 def aligned_image(path, output_wcs, shape):

@@ -158,7 +158,7 @@ def measure_proper_motion_from_cutouts(
     search_dec = float(mission_coord.dec.deg)
 
     try:
-        from backend.track1 import archive, visits, cutouts
+        from backend.irsa import archive, visits, cutouts
         raw_exps = archive.search(search_ra, search_dec, size_deg=0.083)
         if not raw_exps:
             raw_exps = archive.search(ra_deg, dec_deg, size_deg=0.083)
@@ -529,7 +529,7 @@ def query_live_gaia_overlay(ra_deg: float, dec_deg: float, fov_arcmin: float, ta
 
 if __name__ == "__main__":
     print("=== Testing Astrometric Validation & Proper Motion Engine ===")
-    from backend.track1_orchestration.catalog import get_target_by_query
+    from backend.orchestration.catalog import get_target_by_query
 
     for tname in ["Barnard's Star", "WISE 0855-0714"]:
         tmeta = get_target_by_query(tname)

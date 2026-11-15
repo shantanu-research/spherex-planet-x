@@ -1,6 +1,6 @@
-"""Track 1 backend API.
+"""Data backend API.
 
-Run:  uvicorn track1.api:app --reload --port 8000
+Run:  uvicorn irsa.api:app --reload --port 8000
 Docs: http://localhost:8000/docs
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import archive, cutouts, visits
 
-app = FastAPI(title="SPHEREx Flipbook - Track 1 data API")
+app = FastAPI(title="SPHEREx Flipbook - data API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 cutouts.CUTOUT_DIR.mkdir(parents=True, exist_ok=True)

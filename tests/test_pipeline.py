@@ -1,6 +1,6 @@
 """
 SPHEREx Planet X Challenge - Comprehensive Verification & Test Suite
-Unit and integration tests for Tracks 1, 2, 3, and 4.
+Unit and integration tests for every pipeline module.
 """
 
 import os
@@ -12,25 +12,25 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from backend.track1_orchestration.catalog import BENCHMARK_TARGETS, get_benchmark_list
-from backend.track1_orchestration.resolver import propagate_coordinates, resolve_target
-from backend.track1_orchestration.visit_clustering import cluster_exposures_into_visits
-from backend.track2_calibration.cleaning import clean_frame_data, DEFAULT_MP_FLAGS
-from backend.track2_calibration.band_balancer import perform_band_balanced_stacking, label_exposure_spectral_channel
-from backend.track2_calibration.flicker_audit import compute_flicker_statistics, run_still_star_flicker_audit
-from backend.track2_calibration.differencing import compute_temporal_median_template, compute_difference_frames, perform_shift_and_stack
-from backend.track3_spectrophotometry.molecular_fingerprints import generate_102_channel_grid
-from backend.track3_spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
-from backend.track3_spectrophotometry.astrometric_validator import fit_2d_centroid, validate_proper_motion_astrometry
-from backend.track4_rendering.wcs_engine import WCSEngine
-from backend.track4_rendering.colorization import ir_to_visible_wavelength_log, lupton_asinh_color_compression
-from backend.track4_rendering.stretching import apply_global_detector_asinh_stretch, apply_symmetric_difference_stretch
-from backend.track4_rendering.gif_encoder import encode_gif_stream, burn_telemetry_hud
+from backend.orchestration.catalog import BENCHMARK_TARGETS, get_benchmark_list
+from backend.orchestration.resolver import propagate_coordinates, resolve_target
+from backend.orchestration.visit_clustering import cluster_exposures_into_visits
+from backend.calibration.cleaning import clean_frame_data, DEFAULT_MP_FLAGS
+from backend.calibration.band_balancer import perform_band_balanced_stacking, label_exposure_spectral_channel
+from backend.calibration.flicker_audit import compute_flicker_statistics, run_still_star_flicker_audit
+from backend.calibration.differencing import compute_temporal_median_template, compute_difference_frames, perform_shift_and_stack
+from backend.spectrophotometry.molecular_fingerprints import generate_102_channel_grid
+from backend.spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
+from backend.spectrophotometry.astrometric_validator import fit_2d_centroid, validate_proper_motion_astrometry
+from backend.rendering.wcs_engine import WCSEngine
+from backend.rendering.colorization import ir_to_visible_wavelength_log, lupton_asinh_color_compression
+from backend.rendering.stretching import apply_global_detector_asinh_stretch, apply_symmetric_difference_stretch
+from backend.rendering.gif_encoder import encode_gif_stream, burn_telemetry_hud
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 
 class TestSpherexPipeline(unittest.TestCase):
 
-    def test_track1_resolver_stale_epoch(self):
+    def test_stage1_resolver_stale_epoch(self):
         """Verify WISE 0855 proper motion drift over ~16 years (~2.04 arcmin / ~20 px)."""
         target = BENCHMARK_TARGETS["WISE 0855-0714"]
         prop = propagate_coordinates(
@@ -49,7 +49,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertIsNotNone(resolved["stale_epoch_warning"])
         self.assertIn("STALE CATALOG EPOCH HAZARD", resolved["stale_epoch_warning"])
 
-    def test_track1_visit_clustering(self):
+    def test_stage1_visit_clustering(self):
         """Verify clustering into visits at 30-day temporal gaps."""
         exps = [
             {"mjd_mid": 60800.0, "id": "e1"},
@@ -63,7 +63,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertEqual(visits[1]["visit_id"], "V2")
         self.assertEqual(visits[2]["visit_id"], "V3")
 
-    def test_track2_band_balanced_stacking(self):
+    def test_stage2_band_balanced_stacking(self):
         """Verify Akhilesh's 5-step hierarchical stacking across 17 LVF channels."""
         sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=32)
         visits = sim["visits"]
@@ -72,7 +72,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertGreaterEqual(res["n_shared_channels"], 1)
         self.assertEqual(len(res["visit_stacks"]), len(visits))
 
-    def test_track2_flicker_audit_reduction(self):
+    def test_stage2_flicker_audit_reduction(self):
         """Verify Still-Star Photometric Stability Audit achieves > 60% flicker suppression."""
         sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=64)
         # Raw chronological playback: each exposure observes at a different LVF channel
@@ -86,7 +86,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertLess(audit["mean_balanced_flicker_pct"], 4.0)
         self.assertGreater(audit["overall_flicker_suppression_pct"], 50.0)
 
-    def test_track3_102_channel_spectrophotometry(self):
+    def test_stage3_102_channel_spectrophotometry(self):
         """Verify full 102-channel grid across D1-D6 and molecular line detection."""
         grid = generate_102_channel_grid()
         self.assertEqual(len(grid), 102)
@@ -96,7 +96,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertEqual(spec["total_channels"], 102)
         self.assertTrue(any("CH4" in f for f in spec["detected_molecular_features"]))
 
-    def test_track3_astrometric_centroiding(self):
+    def test_stage3_astrometric_centroiding(self):
         """Verify 2D Gaussian centroiding and proper motion linear fit."""
         img = [[0.0 for _ in range(32)] for _ in range(32)]
         img[16][16] = 50.0
@@ -105,7 +105,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertAlmostEqual(cx, 16.375, places=1)
         self.assertAlmostEqual(cy, 16.0, places=1)
 
-    def test_track4_wcs_relative_positioning(self):
+    def test_stage4_wcs_relative_positioning(self):
         """Verify Idea 1: Inertial vs Co-Moving Target-Locked frame transformations."""
         wcs = WCSEngine(fov_arcmin=6.5, center_ra_deg=133.79, center_dec_deg=-7.24)
         img = [[0.0 for _ in range(wcs.grid_size)] for _ in range(wcs.grid_size)]
@@ -119,7 +119,7 @@ class TestSpherexPipeline(unittest.TestCase):
         # In comoving mode, image is shifted by -dx to keep target centered
         self.assertGreater(comoving[32][27], 50.0)
 
-    def test_track4_idea2_spectral_superposition(self):
+    def test_stage4_idea2_spectral_superposition(self):
         """Verify Idea 2: Logarithmic IR-to-visible bijection and Lupton asinh color compression."""
         # 0.744 um -> 380 nm (Violet)
         v_min = ir_to_visible_wavelength_log(0.744)
@@ -132,7 +132,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertGreater(r, g)
         self.assertGreater(g, b)
 
-    def test_track4_gif_encoder_stream(self):
+    def test_stage4_gif_encoder_stream(self):
         """Verify deterministic GIF89a encoding with burned-in telemetry HUD."""
         frame = [[(20, 20, 20) for _ in range(32)] for _ in range(32)]
         hud_frame = burn_telemetry_hud(frame, "WISE0855", "V1", 60810.0, "D6", "INERTIAL")

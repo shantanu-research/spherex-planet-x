@@ -7,9 +7,9 @@ from typing import List, Dict, Any, Tuple
 import math
 import random
 import hashlib
-from ..track1_orchestration.catalog import BENCHMARK_TARGETS
-from ..track1_orchestration.resolver import propagate_coordinates, SPHEREx_PIXEL_SCALE_ARCSEC
-from ..track2_calibration.band_balancer import DETECTOR_SPECS, get_channel_wavelength
+from ..orchestration.catalog import BENCHMARK_TARGETS
+from ..orchestration.resolver import propagate_coordinates, SPHEREx_PIXEL_SCALE_ARCSEC
+from ..calibration.band_balancer import DETECTOR_SPECS, get_channel_wavelength
 
 def generate_stationary_field_stars(
     seed: int,

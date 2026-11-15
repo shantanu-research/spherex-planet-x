@@ -6,7 +6,7 @@ from urllib.parse import quote
 import httpx
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from backend.track1_orchestration.catalog import get_target_by_query, BENCHMARK_TARGETS
+from backend.orchestration.catalog import get_target_by_query, BENCHMARK_TARGETS
 
 # Coordinates this close to a test target's catalogue position load that target's installed field.
 PRESET_MATCH_ARCMIN = 1.0

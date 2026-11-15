@@ -107,12 +107,12 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
 .strip-ticks span:last-child { transform:translateX(-100%); }
 .strip figcaption { font-size:14px; color:var(--muted); }
 
-/* Tracks */
-.tracks { list-style:none; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line-strong); }
-.tracks li { padding:24px 24px 8px 0; }
-.tracks li + li { padding-left:24px; border-left:1px solid var(--line); }
-.tracks h3 { font-size:21px; line-height:1.2; font-weight:800; letter-spacing:-.01em; }
-.tracks li p { margin-top:14px; font-size:16px; color:var(--fg); }
+/* Pipeline stages */
+.stages { list-style:none; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line-strong); }
+.stages li { padding:24px 24px 8px 0; }
+.stages li + li { padding-left:24px; border-left:1px solid var(--line); }
+.stages h3 { font-size:21px; line-height:1.2; font-weight:800; letter-spacing:-.01em; }
+.stages li p { margin-top:14px; font-size:16px; color:var(--fg); }
 
 /* Test fields: story list */
 .fields { list-style:none; border-top:1px solid var(--line-strong); }
@@ -176,9 +176,9 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
  .facts dl > div:nth-child(3) { padding-left:0; border-left:0; }
  .facts dl > div:nth-child(n+3) { border-top:1px solid var(--line); }
  .extras > li { grid-template-columns:1fr; }
- .tracks { grid-template-columns:repeat(2,1fr); }
- .tracks li:nth-child(3) { padding-left:0; border-left:0; }
- .tracks li:nth-child(n+3) { border-top:1px solid var(--line); margin-top:16px; }
+ .stages { grid-template-columns:repeat(2,1fr); }
+ .stages li:nth-child(3) { padding-left:0; border-left:0; }
+ .stages li:nth-child(n+3) { border-top:1px solid var(--line); margin-top:16px; }
  .team { grid-template-columns:repeat(2,1fr); }
  .fields a { grid-template-columns:minmax(0,1fr) auto; }
  .f-why { grid-column:1/-1; grid-row:2; }
@@ -191,11 +191,11 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
  .brand span { font-size:15px; }
  .btn-small { padding-inline:12px; font-size:14px; white-space:nowrap; }
  .brand img { width:40px; height:40px; }
- .facts dl, .tracks, .team, .footer-grid { grid-template-columns:1fr; }
+ .facts dl, .stages, .team, .footer-grid { grid-template-columns:1fr; }
  .facts dl > div, .facts dl > div + div { padding:18px 0; border-left:0; }
  .facts dl > div + div { border-top:1px solid var(--line); }
- .tracks li, .tracks li + li { padding:20px 0; border-left:0; margin-top:0; }
- .tracks li + li { border-top:1px solid var(--line); }
+ .stages li, .stages li + li { padding:20px 0; border-left:0; margin-top:0; }
+ .stages li + li { border-top:1px solid var(--line); }
  .principles > div { grid-template-columns:1fr; gap:6px; }
  .member { min-height:0; }
  .hero .actions .btn, .closing .actions .btn { width:100%; justify-content:center; }

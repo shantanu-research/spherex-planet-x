@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from track1 import archive, visits  # noqa: E402
+from irsa import archive, visits  # noqa: E402
 
 FAKE = [
     # uri, t_start, t_end, band
@@ -45,7 +45,7 @@ def test_query_filters():
 
 def test_api_observations(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
-    from track1 import api
+    from irsa import api
     monkeypatch.setattr(archive, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(archive, "_run_tap", fake_tap)
     r = TestClient(api.app).get("/api/observations", params={"ra": 10, "dec": 20})

@@ -168,7 +168,7 @@ dialog::backdrop { background: rgb(0 0 0 / .65); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (pointer: coarse) { button, input { min-height: 44px; } }
 
-/* Pipeline strip: integration of all four tracks */
+/* Pipeline strip: every stage of the integrated pipeline */
 .pipeline-strip { grid-column: 1 / -1; padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 8px; }
 .pipeline-strip h2 { font-size: 15px; margin-bottom: .75rem; color: var(--text-pure); }
 .pipe-list { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }

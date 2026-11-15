@@ -9,7 +9,7 @@ from functools import lru_cache
 import numpy as np
 from astropy.time import Time
 from backend.science import read_exposure, output_grid, group, balanced_stacks, tracked, measured_motion, position
-from backend.track1 import archive, cutouts, visits
+from backend.irsa import archive, cutouts, visits
 
 DATA_ROOT=Path(os.environ.get('SPHEREX_DATA_DIR',str(Path(__file__).resolve().parent.parent/'data'/'observations')))
 _LOCK=threading.Lock()
@@ -160,7 +160,7 @@ def render(target,detector,fov,mode,stretch='asinh',frame_mode=None,color_mode=N
         else:
             rgb=np.repeat(stretch_image(im)[:,:,None],3,axis=2)
             if color_mode=='spectral':
-                from backend.track4_rendering.colorization import DETECTOR_SUPERPOSITION_WEIGHTS
+                from backend.rendering.colorization import DETECTOR_SUPERPOSITION_WEIGHTS
                 rgb=(rgb*np.asarray(DETECTOR_SUPERPOSITION_WEIGHTS[detector])).astype('uint8')
         rgb[mask]=[20,24,32]
         frames.append({'frame_id':str(i),'visit_id':f"V{s['visit']+1}",'mjd':s['mjd'],

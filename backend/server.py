@@ -1,6 +1,6 @@
 """
 SPHEREx Planet X Challenge - Master Backend Server & REST API
-High-performance multithreaded HTTP server orchestrating Tracks 1, 2, 3, and 4.
+High-performance multithreaded HTTP server orchestrating the integrated pipeline.
 Decoupled architecture delegating domain workflows to backend.pipeline.
 Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Plan.
 """
@@ -18,12 +18,12 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from backend.track1_orchestration.catalog import get_benchmark_list, get_target_by_query
-from backend.track1_orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
-from backend.track1_orchestration.cache import cache_instance, CACHE_DIR
-from backend.track2_calibration.band_balancer import DETECTOR_SPECS
-from backend.track3_spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
-from backend.track3_spectrophotometry.astrometric_validator import query_live_gaia_overlay
+from backend.orchestration.catalog import get_benchmark_list, get_target_by_query
+from backend.orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
+from backend.orchestration.cache import cache_instance, CACHE_DIR
+from backend.calibration.band_balancer import DETECTOR_SPECS
+from backend.spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
+from backend.spectrophotometry.astrometric_validator import query_live_gaia_overlay
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.pipeline import execute_pipeline, generate_gif_export
 from backend.data_loader import target_catalog

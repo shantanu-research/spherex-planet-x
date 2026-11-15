@@ -2,7 +2,7 @@
 SPHEREx Planet X Challenge - 102-Channel Spectrophotometry Extraction Engine
 Extracts forced-aperture SED across all 6 detectors (0.744 - 5.002 um) and identifies molecular absorption.
 Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Plan.
-Integrates live IRSA Level-2 FITS cutouts via backend.track1 with photutils aperture photometry and outlier rejection.
+Integrates live IRSA Level-2 FITS cutouts via backend.irsa with photutils aperture photometry and outlier rejection.
 """
 
 from typing import List, Dict, Any, Tuple, Optional
@@ -156,8 +156,8 @@ def extract_real_cutout_photometry(
 ) -> Optional[Dict[str, Any]]:
     """
     Extracts real forced-aperture SED across Detectors 1-6 from IRSA Level-2 FITS cutouts:
-    1. Queries IRSA TAP via backend.track1.archive.
-    2. Downloads and caches cutouts in backend/cache/cutouts/ via backend.track1.cutouts.
+    1. Queries IRSA TAP via backend.irsa.archive.
+    2. Downloads and caches cutouts in backend/cache/cutouts/ via backend.irsa.cutouts.
     3. For each cutout:
        - Propagates target coordinates to MJD-OBS via SkyCoord.apply_space_motion.
        - Finds target pixel (x, y) via WCS(header).
@@ -195,7 +195,7 @@ def extract_real_cutout_photometry(
     search_dec = float(mission_coord.dec.deg)
 
     try:
-        from backend.track1 import archive, cutouts
+        from backend.irsa import archive, cutouts
         # Search for SPHEREx exposures covering the target at mission epoch
         exps = archive.search(search_ra, search_dec, size_deg=0.083)
         if not exps:

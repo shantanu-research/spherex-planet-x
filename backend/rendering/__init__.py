@@ -1,5 +1,5 @@
 """
-Track 4: WCS Transformations, Idea 1 Relative Positioning, Idea 2 Spectral Superposition,
+WCS Transformations, Idea 1 Relative Positioning, Idea 2 Spectral Superposition,
 Global Asinh Display Stretching, and Deterministic GIF/MP4 Compilation
 """
 

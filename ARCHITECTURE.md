@@ -1,10 +1,10 @@
 # SPHEREx Planet X Challenge: Mathematical & Systems Architecture
 
-This document provides the mathematical specifications, tensor operations, and data contracts implemented across Tracks 1, 2, 3, and 4.
+This document provides the mathematical specifications, tensor operations, and data contracts implemented across the integrated pipeline.
 
 ---
 
-## 1. Track 1: Astrometric Space Motion & Parallax Propagation
+## 1. Astrometric Space Motion & Parallax Propagation
 
 Let a cataloged celestial source have coordinates $(\alpha_0, \delta_0)$ at reference discovery epoch $t_0$, proper motion $(\mu_{\alpha *}, \mu_\delta)$ with $\mu_{\alpha *} = \mu_\alpha \cos \delta_0$ in $\text{mas/yr}$, and parallax $\varpi$ in $\text{mas}$.
 
@@ -22,7 +22,7 @@ At observation epoch $t_{\text{obs}}$ with $\Delta t = t_{\text{obs}} - t_0$ (ye
 
 ---
 
-## 2. Track 2: Akhilesh's 5-Step Band-Balanced LVF Stacking Engine
+## 2. Akhilesh's 5-Step Band-Balanced LVF Stacking Engine
 
 ### Step 1: Per-Exposure Spectral Labelling
 For each exposure $i$ on detector $d \in \{D_1 \dots D_6\}$, evaluate the spectral WCS key `'W'` at $(x, y)$ to determine target central wavelength $\lambda_{\text{target}, i}$. Map $\lambda_{\text{target}, i}$ to discrete spectral channel index $b_i \in \{1 \dots 17\}$:
@@ -47,7 +47,7 @@ $$D_{v,d}(x,y) = F_{v,d}(x,y) - T_d(x,y)$$
 
 ---
 
-## 3. Track 4: Idea 1 - Metadata-Driven Relative Frame Positioning
+## 3. Idea 1 - Metadata-Driven Relative Frame Positioning
 
 Construct output gnomonic grid $\mathcal{G}_{\text{out}}$ centered on reference coordinate $(\alpha_c, \delta_c)$ at $(u_0, v_0)$ with pixel scale $s = 6.15\text{ arcsec/px}$.
 
@@ -62,7 +62,7 @@ Construct output gnomonic grid $\mathcal{G}_{\text{out}}$ centered on reference 
 
 ---
 
-## 4. Track 4: Idea 2 - Infrared-to-Visible Spectral Superposition
+## 4. Idea 2 - Infrared-to-Visible Spectral Superposition
 
 1. **Logarithmic Wavelength Bijection:**
    $$\lambda_{\text{vis}}(\lambda_{\text{IR}}) = 380 + 370 \cdot \frac{\ln(\lambda_{\text{IR}} / 0.744)}{\ln(5.002 / 0.744)} \quad [\text{nm}]$$

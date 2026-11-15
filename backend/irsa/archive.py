@@ -25,7 +25,7 @@ RELEASE_RANK = {"dr1": 3, "qr3": 2, "qr2": 1, "qr": 0, "unknown": -1}
 
 @dataclass
 class Exposure:
-    """One SPHEREx exposure covering the target. Shared with Tracks 2-4."""
+    """One SPHEREx exposure covering the target. Shared with the processing, spectra and viewer modules."""
     image_url: str        # full-image URL (never download this directly, ~70 MB)
     cutout_url: str       # same image cut down around the target
     t_start_mjd: float

@@ -1,4 +1,4 @@
-# SPHEREx Flipbook – Track 1 (data pipeline and backend)
+# SPHEREx Flipbook – data pipeline and backend
 
 ## Start
 1. Double-click `setup.bat` (installs into `.venv`, runs tests, checks the real archive).
@@ -13,14 +13,14 @@
   Tip: ask for one detector (`det=D5`) — each cutout is ~4 MB, mostly PSF data.
 - `GET /api/collections` — SPHEREx collections IRSA currently offers (DR1 check).
 
-## Exposure fields (agree these with Tracks 2–4)
+## Exposure fields (shared with the processing, spectra and viewer modules)
 `image_url, cutout_url, t_start_mjd, t_end_mjd, t_start_iso, detector, release, visit` (+ `file_url, cached, error` from /api/cutouts)
 
 ## Files
-- `track1/archive.py` – TAP query (spherex.artifact JOIN spherex.plane, IRSA tutorial pattern), dedupe across releases
-- `track1/visits.py` – split into visits at gaps > 30 days
-- `track1/cutouts.py` – parallel download with retries and disk cache (`cache/`)
-- `track1/api.py` – FastAPI app
+- `irsa/archive.py` – TAP query (spherex.artifact JOIN spherex.plane, IRSA tutorial pattern), dedupe across releases
+- `irsa/visits.py` – split into visits at gaps > 30 days
+- `irsa/cutouts.py` – parallel download with retries and disk cache (`cache/`)
+- `irsa/api.py` – FastAPI app
 - `scripts/check_irsa.py` – real-archive check; writes `notes/real_header.txt` and `notes/plane_columns.txt`
 
 Data: NASA SPHEREx via NASA/IPAC Infrared Science Archive (IRSA).

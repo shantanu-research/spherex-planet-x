@@ -1,5 +1,5 @@
 """
-Track 3: 102-Channel Forced Spectrophotometry and Astrometric Proper Motion Validation
+102-Channel Forced Spectrophotometry and Astrometric Proper Motion Validation
 """
 
 from .molecular_fingerprints import generate_102_channel_grid, DIAGNOSTIC_MOLECULAR_BANDS

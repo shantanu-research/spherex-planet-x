@@ -1,5 +1,5 @@
 """
-Track 1: Data Ingestion, Astrometric Propagation, and Visit Clustering
+Data Ingestion, Astrometric Propagation, and Visit Clustering
 """
 
 from .catalog import BENCHMARK_TARGETS, get_benchmark_list, get_target_by_query

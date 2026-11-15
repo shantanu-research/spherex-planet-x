@@ -37,7 +37,7 @@ The default is Barnard's Star, D1. Select another preset to inspect individual o
 - Native-pixel aperture flux measurements with errors and observation dates; CSV export and an accessible data table.
 - Live Gaia and CatWISE reference overlays, mask display, pan/zoom, wipe comparison, playback and keyboard controls.
 - Dataset 'data as of' date, labelled reference band positions on spectra (not detections), and a volunteer 'Flag something interesting' button that saves a local JSON note (nothing is uploaded).
-- A pipeline strip showing, for the current field, what each of the four tracks produced (data and visits, calibration and masks, spectra and astrometry, viewer state); unavailable stages are reported as unavailable and each card opens its measurements tab.
+- A pipeline strip showing, for the current field, what each pipeline stage produced (data and visits, calibration and masks, spectra and astrometry, viewer state); unavailable stages are reported as unavailable and each card opens its measurements tab.
 - Shareable URL state, iframe embed code, GIF and real H.264 MP4 exports with observation telemetry.
 - Docker/Render configuration and GitHub Actions checks.
 
@@ -110,12 +110,12 @@ The team patch (`frontend/assets/mission-patch.svg`) is an original design: thre
 
 ## Who built what
 
-Team Overdrive (NASA Space Apps 2026, Pune local event). Roles follow the team's track plan.
+Team Overdrive (NASA Space Apps 2026, Pune local event).
 
-- **Track 1, data pipeline and backend: Malhar Tamhankar.** IRSA archive queries, visit grouping, per-visit frame selection, cutouts and caching, the FastAPI backend; demo-target pre-caching, faster cached search, retry handling for archive 503 errors, same-wavelength time-lapse and the first real SPHEREx light curves.
-- **Track 2, image processing: Akhilesh Rohit Bhosale.** Band-balanced stacking (wavelength labels from the spectral WCS, shared-band checks, alignment before stacking) and the colour-shift solution that keeps wavelength changes from being mistaken for motion.
-- **Track 3, spectra and science validation: Amrita Patil.** On-the-fly aperture spectra, sub-pixel centroid and proper-motion tracking, Gaia DR3 overlays propagated to each epoch, flag masking and saturation guard, and validation of the five test targets.
-- **Track 4, frame stitching, viewer and demo: Shantanu Pawar, team leader.** Frame sequencing and viewing modes, the web viewer, GIF/MP4 export, shareable and embeddable URLs, demo and submission.
+- **Team leader, ideation, planning, integration, UI design and management: Shantanu Pawar.** Came up with the idea and planned the work, managed the team, and integrated every module below into one system so data, processing, spectra and the viewer work together. Designed the interface and built the viewer, the viewing modes, GIF/MP4 export, shareable and embeddable URLs, the demo and the submission.
+- **Data pipeline and backend: Malhar Tamhankar.** IRSA archive queries, visit grouping, per-visit frame selection, cutouts and caching, the FastAPI backend; demo-target pre-caching, faster cached search, retry handling for archive 503 errors, same-wavelength time-lapse and the first real SPHEREx light curves.
+- **Image processing: Akhilesh Rohit Bhosale.** Band-balanced stacking (wavelength labels from the spectral WCS, shared-band checks, alignment before stacking) and the colour-shift solution that keeps wavelength changes from being mistaken for motion.
+- **Spectra and science validation: Amrita Patil.** On-the-fly aperture spectra, sub-pixel centroid and proper-motion tracking, Gaia DR3 overlays propagated to each epoch, flag masking and saturation guard, and validation of the five test targets.
 
 ## Submission and sources
 

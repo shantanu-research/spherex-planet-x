@@ -1,6 +1,6 @@
 """
 SPHEREx Planet X Challenge - Master Pipeline Orchestrator
-Modular orchestration engine uniting Tracks 1, 2, 3, and 4.
+Modular orchestration engine uniting every module.
 Decoupled from HTTP transport to support CLI, batch workflows, and REST APIs.
 Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Plan.
 """
@@ -8,30 +8,30 @@ Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Pl
 import math
 import io
 from typing import Dict, Any, List, Optional, Tuple
-from backend.track1_orchestration.catalog import get_target_by_query
-from backend.track1_orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
-from backend.track2_calibration.cleaning import clean_frame_data
-from backend.track2_calibration.band_balancer import perform_band_balanced_stacking
-from backend.track2_calibration.flicker_audit import run_still_star_flicker_audit
-from backend.track2_calibration.differencing import (
+from backend.orchestration.catalog import get_target_by_query
+from backend.orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
+from backend.calibration.cleaning import clean_frame_data
+from backend.calibration.band_balancer import perform_band_balanced_stacking
+from backend.calibration.flicker_audit import run_still_star_flicker_audit
+from backend.calibration.differencing import (
     compute_difference_frames,
     compute_temporal_median_template,
     perform_shift_and_stack,
 )
-from backend.track3_spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
-from backend.track3_spectrophotometry.astrometric_validator import validate_proper_motion_astrometry
-from backend.track4_rendering.wcs_engine import WCSEngine
-from backend.track4_rendering.colorization import (
+from backend.spectrophotometry.spectrum_extractor import extract_102_channel_spectrum
+from backend.spectrophotometry.astrometric_validator import validate_proper_motion_astrometry
+from backend.rendering.wcs_engine import WCSEngine
+from backend.rendering.colorization import (
     colorize_detector_image,
     composite_multiband_false_color,
     DETECTOR_SUPERPOSITION_WEIGHTS,
 )
-from backend.track4_rendering.stretching import (
+from backend.rendering.stretching import (
     calculate_percentiles,
     apply_global_detector_asinh_stretch,
     apply_symmetric_difference_stretch,
 )
-from backend.track4_rendering.gif_encoder import burn_telemetry_hud, encode_gif_stream
+from backend.rendering.gif_encoder import burn_telemetry_hud, encode_gif_stream
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.data_loader import target_catalog, SPHEREX_BANDS
 
@@ -97,7 +97,7 @@ def execute_pipeline(
         eff_color_mode = color_mode or "spectral"
         eff_process_mode = process_mode or "balanced"
 
-    # 1. Track 1: Ingestion & Resolution
+    # 1. Ingestion & Resolution
     from backend.targets import resolve
     target_meta = resolve(target_key)
     resolved = {"target": target_meta, "stale_epoch_warning": None}
@@ -118,7 +118,7 @@ def execute_pipeline(
     field_stars = sim_data["field_stars"]
     star_positions = [(s["x"], s["y"]) for s in field_stars]
 
-    # 2. Track 2: Cleaning & Akhilesh's 5-Step Band-Balanced Stacking
+    # 2. Cleaning & Akhilesh's 5-Step Band-Balanced Stacking
     for v in raw_visits:
         for exp in v["exposures"]:
             clean_img, clean_wt, _ = clean_frame_data(
@@ -129,20 +129,20 @@ def execute_pipeline(
     stack_res = perform_band_balanced_stacking(raw_visits, detector=detector)
     balanced_visits = stack_res["visit_stacks"]
 
-    # Track 2: Automated Still-Star Flicker Audit
+    # Automated Still-Star Flicker Audit
     raw_first_frames = [{"image": v["exposures"][0]["image"]} for v in raw_visits]
     flicker_audit = run_still_star_flicker_audit(raw_first_frames, balanced_visits, star_positions)
 
-    # Track 2: Temporal Median Template & Difference Imaging
+    # Temporal Median Template & Difference Imaging
     balanced_images = [v["stacked_image"] for v in balanced_visits]
     median_template = compute_temporal_median_template(balanced_images)
     diff_visits = compute_difference_frames(balanced_visits, template=median_template)
 
-    # Track 3: 102-Channel Spectrophotometry & Astrometric Validation
+    # 102-Channel Spectrophotometry & Astrometric Validation
     spectrum_data = extract_102_channel_spectrum(target_meta, source_mode="simulated")
     astrometric_validation = validate_proper_motion_astrometry(balanced_visits, target_meta)
 
-    # 3. Track 4: WCS Engine, Idea 1 Relative Positioning & Stretching
+    # 3. WCS Engine, Idea 1 Relative Positioning & Stretching
     wcs = WCSEngine(fov_arcmin=fov_arcmin, center_ra_deg=target_meta["ra_deg"], center_dec_deg=target_meta["dec_deg"])
 
     # Determine which image series to render based on viewing mode

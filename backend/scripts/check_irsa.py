@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from track1 import archive, cutouts, visits  # noqa: E402
+from irsa import archive, cutouts, visits  # noqa: E402
 
 # Position used in IRSA's own cutout tutorial: known to have SPHEREx coverage.
 RA, DEC, SIZE = 210.80227, 54.34895, 0.083

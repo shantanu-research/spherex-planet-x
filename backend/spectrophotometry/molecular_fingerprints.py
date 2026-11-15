@@ -5,7 +5,7 @@ Defines the 102 SPHEREx spectral channels and key molecular absorption lines.
 
 from typing import List, Dict, Any
 
-# Primary Diagnostic Molecular Bands (Table 2.1 & Track 3)
+# Primary Diagnostic Molecular Bands (Table 2.1)
 DIAGNOSTIC_MOLECULAR_BANDS = [
     {
         "name": "TiO / VO Metal Oxides",
