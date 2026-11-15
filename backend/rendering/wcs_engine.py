@@ -126,12 +126,19 @@ class WCSEngine:
                     p10 = input_image[y0][x1]
                     p01 = input_image[y1][x0]
                     p11 = input_image[y1][x1]
-                    
-                    interp = (p00 * (1 - fx) * (1 - fy) +
-                              p10 * fx * (1 - fy) +
-                              p01 * (1 - fx) * fy +
-                              p11 * fx * fy)
-                    out[y][x] = interp
+
+                    # Masked (None) neighbours: renormalise over the valid ones
+                    terms = [
+                        (p00, (1 - fx) * (1 - fy)),
+                        (p10, fx * (1 - fy)),
+                        (p01, (1 - fx) * fy),
+                        (p11, fx * fy),
+                    ]
+                    w_sum = sum(w for p, w in terms if p is not None)
+                    if w_sum > 1e-9:
+                        out[y][x] = sum(p * w for p, w in terms if p is not None) / w_sum
+                    else:
+                        out[y][x] = None
                 elif 0 <= int(round(src_x)) < w and 0 <= int(round(src_y)) < h:
                     out[y][x] = input_image[int(round(src_y))][int(round(src_x))]
                 else:

@@ -782,12 +782,13 @@ class SpherexApp {
       this.auditChart.setData(null);
       return;
     }
+    const pct = (v) => (v == null ? 'Not run' : `${v}%`);
     const rawF = document.getElementById('rawFlickerVal');
-    if (rawF) rawF.textContent = `${audit.mean_raw_flicker_pct}%`;
+    if (rawF) rawF.textContent = pct(audit.mean_raw_flicker_pct);
     const balF = document.getElementById('balancedFlickerVal');
-    if (balF) balF.textContent = `${audit.mean_balanced_flicker_pct}%`;
+    if (balF) balF.textContent = pct(audit.mean_balanced_flicker_pct);
     const supF = document.getElementById('flickerSuppressionVal');
-    if (supF) supF.textContent = `${audit.overall_flicker_suppression_pct}%`;
+    if (supF) supF.textContent = pct(audit.overall_flicker_suppression_pct);
     const nullF = document.getElementById('nullTestVal');
     if (nullF) nullF.textContent = audit.null_test_chi2_nu == null
       ? 'Not provided'
