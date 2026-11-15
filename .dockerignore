@@ -4,3 +4,5 @@
 backend/cache
 data/drive
 *.zip
+
+data/observations

@@ -1,22 +1,15 @@
-# SPHEREx Sky Flipbook — submission draft
+# SPHEREx Sky Flipbook
 
-Explore infrared sky observations as aligned images, with explicit distinctions between real archive data and simulations. The project addresses SPHEREx's position-dependent wavelength coverage by checking the spectral WCS before comparing individual exposures across visits.
+SPHEREx observes the infrared sky through a spatially varying filter. Blinking images at different wavelengths can make an unchanged source look variable. Sky Flipbook lets users inspect observation dates, wavelength coverage, masks and source files before interpreting apparent motion or changing brightness.
 
-## Implemented and tested
+Users can select five project fields or resolve a name/coordinate, view individual exposures or wavelength-balanced visits, compare differences, follow catalogue proper motion, inspect native aperture measurements, and export GIF/MP4 animations. Simulations require explicit selection and are labelled throughout.
 
-Archive discovery and bounded cutout fetching; WCS image alignment; zodiacal model subtraction; flagged-pixel exclusion; explicit simulation selection; per-pixel wavelength overlap checks for longest-baseline pairs; GIF and MP4 exports; Docker and Render configuration.
+The real-data pipeline reads IMAGE, VARIANCE, FLAGS, ZODI and spectral WCS from SPHEREx FITS. It applies quality masks, registers onto a common celestial grid, balances shared wavelength bins and propagates marginal variances. Reference overlays use Gaia and CatWISE. Accessible tables, keyboard navigation, native dialogs and progress indicators support the visual interface.
 
-## Evidence and limits
+The supplied collection has 42 FITS files across five fields; 41 have usable pixels in the default fields. The repository's reproducible validation report records mode availability and aperture measurements. Coverage is sparse: one target has only one visit, and many detector/visit combinations lack shared wavelengths. Those comparisons are explicitly unavailable. This software validation is not an astrophysical discovery or independent validation of the supplied catalogue coordinates.
 
-The targeted automated suite covers source provenance, input validation, archive grouping, alignment, masking, wavelength mismatch rejection, and valid MP4 encoding. A real Barnard's Star D6 FITS file from the project Drive was inspected and its spectral WCS evaluated. These checks are not five-target scientific validation. Live archive availability has been intermittent. No validated discovery, photometric precision, or measured proper-motion accuracy is claimed.
+Known scientific limits include masked bright cores, no PSF homogenization/aperture correction, unmodelled resampling covariance and calibration systematics, and tracking without annual parallax. No real-data flicker-suppression precision, molecular identification or Planet X detection is claimed.
 
-Deployment and full scientific validation remain prerequisites for final submission. The current temporal matching compares individual exposures; visit co-addition, difference processing, motion tracking, and false colour still need integration with real exposures. The original simulation implements additional demonstrations, which must be labelled as simulations.
+The Docker image and Render Blueprint are prepared. Public hosting requires an authorized hosting connection and has not been verified. This description is ready for team review; an official challenge submission has not been made.
 
-## Sources and acknowledgement
-
-NASA SPHEREx observations served by IRSA at Caltech/IPAC: https://irsa.ipac.caltech.edu/Missions/spherex.html
-Astropy: https://www.astropy.org/
-SciPy: https://scipy.org/
-FFmpeg: https://ffmpeg.org/
-
-Project planning and test FITS files were supplied by the team through Google Drive. AI assistance was used for code changes, debugging, and documentation. Team attribution and current competition submission requirements must be verified before submission.
+Sources: NASA SPHEREx observations from IRSA/Caltech/IPAC; team-supplied Google Drive project files; Gaia DR3; CatWISE2020; CDS Sesame. Dependencies include Astropy, NumPy, SciPy, HTTPX, Pillow and FFmpeg. AI assistance was used for code, testing and documentation. Confirm team attribution and the official competition's current requirements before submission.

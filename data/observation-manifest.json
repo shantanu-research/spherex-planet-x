@@ -1,0 +1,296 @@
+[
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D6_level2_2025W33_2C_0321_1D6_spx_l2b-v20-2025-266.fits",
+    "drive_url": "https://drive.google.com/file/d/1hy2R-ELDQDZ3U6gwr-EAMyAgG8X_QFTD/view?usp=drivesdk",
+    "bytes": 6419520,
+    "sha256": "213ea34bae109eef762c535b0301bbf098bf6f752eb793aa110803c4d53f0401"
+  },
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D5_level2_2025W34_2B_0090_4D5_spx_l2b-v20-2025-267.fits",
+    "drive_url": "https://drive.google.com/file/d/1ZZNyOBxLdtOaVlAzioN9tJNnBVilN8gE/view?usp=drivesdk",
+    "bytes": 6108480,
+    "sha256": "4e8ab450254226bdb2926d73f8b7824786e5b37ca79fff8208289f37eec05824"
+  },
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D4_level2_2025W35_1A_0432_4D4_spx_l2b-v20-2025-270.fits",
+    "drive_url": "https://drive.google.com/file/d/1YAZ1JXAKTb2gH1g0T7P9Jk3QUYYOssmD/view?usp=drivesdk",
+    "bytes": 6177600,
+    "sha256": "bf6402129307a099df3f4a272399d6bff4a3b1f75198fb5b83771d83764523a0"
+  },
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D3_level2_2025W33_2C_0321_1D3_spx_l2b-v20-2025-267.fits",
+    "drive_url": "https://drive.google.com/file/d/1uVOrB6z-x8hsHMtRB4u4YgosJcLlDEkp/view?usp=drivesdk",
+    "bytes": 6419520,
+    "sha256": "5a5bf7a0fc14381d70527261e71615447a5bb011cf73d93f71142ac5a2f1d720"
+  },
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D1_level2_2025W35_1A_0432_4D1_spx_l2b-v20-2025-269.fits",
+    "drive_url": "https://drive.google.com/file/d/16qWSv96AIE2bsZCv5BRZh8tdhqOQdjIV/view?usp=drivesdk",
+    "bytes": 6120000,
+    "sha256": "06559f2920c81f899380cd7663e55c05421375021ac3dc8b6a699974876f4121"
+  },
+  {
+    "target": "r_dra",
+    "file": "r_dra/spherex_qr2_cutout_2026W01_1A_0257_3D6_15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1Foi-8IsG_0R4lmXvi0O--OUEoKpCaOTh/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "e413911687f3c7870be5647684518c97ff441ad49fc88996991e37f373ae4d96"
+  },
+  {
+    "target": "r_dra",
+    "file": "r_dra/spherex_qr3_cutout_2026W31_2A_0014_4D4_15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1axa_Bgx-c_hN1KwUfsjRDSxPvShflmIJ/view?usp=drivesdk",
+    "bytes": 4285440,
+    "sha256": "9d94b8eea0125482fc14f1fce7c782da322ebaea16d4f56460a6d63bc9320333"
+  },
+  {
+    "target": "barnards_star",
+    "file": "barnards_star/spherex_SPHEREx-D2_level2_2025W34_2B_0090_4D2_spx_l2b-v20-2025-267.fits",
+    "drive_url": "https://drive.google.com/file/d/1jIZIU2Yq4NHniyAL74saqcaVxBYHL2UF/view?usp=drivesdk",
+    "bytes": 6050880,
+    "sha256": "08f30a4816bf667f8157fe3824e762b1e261f50fe39ce97e06d894a4faea3167"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2026W18_2A_0247_1_D5_2026-05-01_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1dCzeuxpVTL3Eil-UDlGP-7GKy3wBVx-0/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "ab6573e6f718c1a320a124291aab5e2b6ed0c2f185d35f86c872abfe214d2803"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2026W17_1B_0634_1_D6_2026-04-23_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1Rj38KVDCbYbK-U-CCgE30dOLxh1n2KWa/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "860411687954090ff789f2741b6841a26adbaff803e2d20a0499a0b89a75af81"
+  },
+  {
+    "target": "r_dra",
+    "file": "r_dra/spherex_qr2_cutout_2026W01_1A_0257_3D3_15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1C2iQ6Q661uCCZL8oJVgX3TTTRr0JOw9Z/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "2831ca56df716ca10b297b565081696cc0287a8adf2eceec692921c8dd32ca43"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W50_2A_0232_1_D6_2025-12-12_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1RvGns3PZSrNnTd1Y2gjAcFB4K9Qj1hj1/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "7fd61eec30b995931331bc57e931a23440004be76fe13d65d2452727034590d6"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W19_1B_0241_1_D1_2025-05-06_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1mIAi6ayK96EFS2BBNElQ77mIwLQbAbTS/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "e63f622c7c80b9e14a7807a2afa3c6376bd1824f5573be7f392052951e91617c"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W45_2A_0164_1_D5_2025-11-07_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1rNl1424PNNC65uDl9koQqgULaGA1zG9k/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "51408974c0cbf965d4520e85c216ef973f4afd3ec57a4e4918e5554a0f22c1b7"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W46_1A_0076_1_D6_2025-11-10_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1iDzHcVyKYVfaYYMnXlQ6by31VjgFlJBc/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "88022cbf6109709eb2eee105f55add2366daebdacdc38cdb1642cf9da45abc85"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W50_2A_0164_1_D5_2025-12-12_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1ZYciKrOcAO1XWVTv5ksf1KTblVfDdV7J/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "8d9b3401f74192a43ec82dd1179a095aa7aae7452fd889bbe081555451e35e58"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr3_D6_2026W40_2026W40_1A_0070_2_D6_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1BkOfmfmocYrJhdIDEwftOtCOXxqoBsfH/view?usp=drivesdk",
+    "bytes": 4285440,
+    "sha256": "ce3d16fd3720d8348d42c179cadfec11ddf2fddc135cde4597dff48f519d46be"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D1_2025W17_2025W17_4B_0077_3_D1_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/152LY8cZmWCD76fJGqqI5YNz56htLlZiw/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "83125de485c0c3e06dfd32d6a43c4bf7d5a2a8754b75266772889c34ddfa9242"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W19_1B_0116_1_D6_2025-05-05_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1nHA0K0ILq9H7dVUjR84ISoiShu4Qt_cp/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "5f9058572af32b9c3bc4d2012dd280ee0430bf6941d2739c25c6430b8720f1e7"
+  },
+  {
+    "target": "wise_0855",
+    "file": "wise_0855/spherex_qr2_2025W19_1B_0181_1_D5_2025-05-06_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1jZhegizwnsoWu2--22sgADnEuK9E0y3t/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "9a6cd494d5c100cfe7358a0036605a424e2d29b56cb6e225b81de27cf021de54"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr3_D3_2026W40_2026W40_1A_0070_2_D3_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1aFwsaE-9opqT41LkDX_RSgMwHHZ6p4T4/view?usp=drivesdk",
+    "bytes": 4371840,
+    "sha256": "a569665c9ef04cb5f7f0a2cbd9083561dd1036411ea1a092d3e9e054cdf57a60"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr3_D2_2026W40_2026W40_2A_0216_2_D2_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1V9WtoZQa7UCrhIpH1igCSrjL4LyjomUt/view?usp=drivesdk",
+    "bytes": 4288320,
+    "sha256": "afd720c0e28679994ae5cf22f96ec79d908edccb7b697cb9bc715d091a775ff9"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr3_D5_2026W40_2026W40_2A_0216_2_D5_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1vL0RQ6EuUr2LkncckHotcihizS5Zdj_S/view?usp=drivesdk",
+    "bytes": 4285440,
+    "sha256": "15ff3bbe1ee7a7ee56623d3f1ac6f3576bb894ea460709a77339d93672b428b7"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D6_2025W18_2025W18_1B_0081_1_D6_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1bPaFyDm_u05TroiVPaDJ-rFZ1KUuyj7A/view?usp=drivesdk",
+    "bytes": 5163840,
+    "sha256": "38d5465ab059c7a371dabb8dad986ec0f4dfdba2ac2a5d98625068623c5aefa9"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D5_2025W17_2025W17_4B_0017_1_D5_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/17grYvMYgH8dgEyLfZAKQxI59IEa2e_oP/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "5c5a21f0a3002b0e6023ec8421389e7bf2a4b1a872a7ecd66314eb0a2c611c1e"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D4_2025W17_2025W17_4B_0077_2_D4_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1cw8VjuZeJCXb2srXvIvsdFvH-IZsY7pI/view?usp=drivesdk",
+    "bytes": 5209920,
+    "sha256": "ab259fd2ffc0b6167048746c142bdfef3a33bb71cebadfd434bd5c3f7cf0b3b4"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D2_2025W17_2025W17_4B_0017_1_D2_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1ar-Np05q87Tqgw_cmbDtu4D3lPJs74NR/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "f993b934c4bf0475c48fa7efb1b47f4c135dc108fdbaf33957f739f6b324dc61"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_early_D3_2025W18_2025W18_1B_0081_2_D3_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1VPgMLXmYZxvPo9aDrY7zhJ0cobRyxNQu/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "65733dcbed27c4e6e13c801c22155bdd904fd9e329aafc9302eefd0e5f868625"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D6_2026W19_2026W19_1A_0041_1_D6_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1XjN0-Ql5HRgis_63pH2_Dn37nXuh2zHA/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "082cd6c62a3bc934c6e43cb681c24976aa182c53fe72dc79a91b828eec3b9eae"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D5_2026W18_2026W18_2A_0023_1_D5_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1GNiXqjb6C3BrbgnpiBWc2sTrn16GnWbt/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "c4db6eabd1e15449dfa45f4aeee45e00ecdcc2fa6f105ef85a27162dbadda5b3"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D4_2026W18_2026W18_2A_0819_1_D4_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1sWq43ehnHQ4HPoHev_TVMwWHAGTDuunY/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "9acaa1223db500376118e3f1d89ae7ee1b83ab653a1c1222ce65a7da9963607c"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D3_2026W19_2026W19_1A_0041_1_D3_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1sDW819X3f_4Ce36pfbY3KToLh1_P7-1O/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "1969914cf5e5dfcb3e94022f3d50c4f78424ef51006c7c42a75ab4d3de29b822"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D1_2026W18_2026W18_2A_0819_1_D1_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1vX6QAv9fZOPQA4sHp7JGlnH7vlKpUHtG/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "c195d3515cf63c5252c6bb98bf1b5282682c2eb879e610ad25da3a1adcec78ad"
+  },
+  {
+    "target": "eps_indi_b",
+    "file": "eps_indi_b/spherex_spherex_qr2_D2_2026W18_2026W18_2A_0023_1_D2_cutout15arcmin.fits",
+    "drive_url": "https://drive.google.com/file/d/1fBbnKuWVGgp9u1DgzeelNTu6ocBcFQh_/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "24de350eb6dc5ef69638b7f96c679d1eabd4f0bda6f9966b94f9e28ba4a84490"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_06_level2_2025W38_2C_0342_1D3_spx_l2b-v20-2025-269.fits",
+    "drive_url": "https://drive.google.com/file/d/1mVd6YTRH2iorz6eU1obW8Xjb4TXrTIc3/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "f2d2af0212ae2e570c5ddee12141287ef2dd88a4e87e45c6b44e37705c6477a7"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr3_cutout_02_level2_2026W38_1A_0435_2D3_spx_l2b-v27-2026-261.fits",
+    "drive_url": "https://drive.google.com/file/d/1PPp_LjpypTUtUROBhTGmq9AH3vBXwx15/view?usp=drivesdk",
+    "bytes": 4371840,
+    "sha256": "6492f10f22dc7277648fa6064746959d0826808a9260e62287a17e36108148e2"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr3_cutout_01_level2_2026W38_1A_0435_1D6_spx_l2b-v27-2026-261.fits",
+    "drive_url": "https://drive.google.com/file/d/10ETStaEhBAwZzsCM73Wv0llCAP8tJGuG/view?usp=drivesdk",
+    "bytes": 4285440,
+    "sha256": "7e4c533974f4d0c4be7f8b464d483a822075c891f6112cf8abd403ff558518be"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_05_level2_2026W10_1A_0445_4D4_spx_l2b-v24-2026-094.fits",
+    "drive_url": "https://drive.google.com/file/d/1--0p_YZ0jGIzVDJA5S8pNxJjxi2wSvhG/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "cd13992613f0863122384f1db81664e38d5c1f134ae710a8c9914b7eb1221fa4"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_01_level2_2025W38_2C_0023_3D6_spx_l2b-v20-2025-269.fits",
+    "drive_url": "https://drive.google.com/file/d/1tDjWNXbM9iZQZ--PqCq6KIYS3_y6v8Cm/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "ad1831435ca2bb2b6b51ff7b13bdfdbf51f78256af5f78267c15c885735b1892"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_04_level2_2026W10_1A_0445_3D4_spx_l2b-v24-2026-094.fits",
+    "drive_url": "https://drive.google.com/file/d/18ZWUk2OUi8kAtnrihAizVW40uRD7blmK/view?usp=drivesdk",
+    "bytes": 5397120,
+    "sha256": "f85ccf8e9899f5c3e64640a9f5878a20d19c0e2bbb34662e3a2e7b55ffc396ba"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_02_level2_2025W38_2C_0023_2D6_spx_l2b-v20-2025-269.fits",
+    "drive_url": "https://drive.google.com/file/d/12XG97ZM9QM3w4xL4dDpzUafV7okH10Rz/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "28570b7eb249762733f43bfb6e598d65b8cafd518a25b2e5ea9309ca70a7a904"
+  },
+  {
+    "target": "rw_aur",
+    "file": "rw_aur/spherex_qr2_cutout_03_level2_2025W38_2C_0023_4D3_spx_l2b-v20-2025-269.fits",
+    "drive_url": "https://drive.google.com/file/d/10OEMqd196Kcyt1GV9PX9FHxMsHyrOp8Y/view?usp=drivesdk",
+    "bytes": 5394240,
+    "sha256": "f8811a3476261caa540ca0131264833eafef6dabd8b79655d36c35e4c6dc1efe"
+  }
+]

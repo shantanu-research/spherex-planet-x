@@ -27,16 +27,17 @@ class SpherexApp {
   parseUrlState() {
     const params = new URLSearchParams(window.location.search);
     return {
-      target: params.get('q') || "Barnard's Star",
+      target: params.has("ra") && params.has("dec") ? `${params.get("ra")},${params.get("dec")}` : params.get("q") || "Barnard's Star",
+      fov: Math.min(15, Math.max(1, Number(params.get("fov")) || 6.5)),
       detector: (params.get('det') || "D1").toUpperCase(),
       mode: params.get('mode') || "visit_blink",           // 7 Master Modes + shift_stack
       frameMode: params.get('frame_mode') || "inertial",   // 'inertial' or 'comoving'
       colorMode: params.get('color_mode') || "spectral",   // 'spectral', 'multiband', 'grayscale'
       sourceMode: params.get('source') || "auto",          // 'auto', 'real', 'simulated'
-      fovMode: params.get('fov_mode') || "wide",           // 'wide' (30' zoomed out) or 'core' (6.5' zoomed in)
+      fovMode: params.get('fov_mode') || "core",           // 'wide' (30' zoomed out) or 'core' (6.5' zoomed in)
       blinkMode: params.get('blink_mode') || "spectral",   // 'spectral' (D1-D6) or 'temporal' (2014-2024 time series)
       fps: parseInt(params.get('fps') || "4", 10),
-      isPlaying: true,
+      isPlaying: false,
       currentFrameIdx: 0,
       totalFrames: 0
     };
@@ -45,6 +46,7 @@ class SpherexApp {
   updateUrlState() {
     const params = new URLSearchParams();
     params.set('q', this.state.target);
+    params.set('fov', this.state.fov);
     params.set('det', this.state.detector);
     params.set('mode', this.state.mode);
     params.set('color_mode', this.state.colorMode);
@@ -59,6 +61,8 @@ class SpherexApp {
   }
 
   syncUIWithState() {
+    document.getElementById("targetQuery").value = this.state.target;
+    document.getElementById("fieldSize").value = this.state.fov;
     // Preset buttons
     document.querySelectorAll('.preset-btn').forEach(b => {
       if (b.dataset.target === this.state.target) b.classList.add('active');
@@ -141,20 +145,39 @@ class SpherexApp {
   }
 
   initEventListeners() {
+    document.getElementById('targetQuery').value = this.state.target;
+    document.getElementById('fieldSize').value = this.state.fov;
+    document.getElementById('targetForm').addEventListener('submit', event => {
+      event.preventDefault(); this.state.target = document.getElementById('targetQuery').value.trim();
+      this.state.fov = Number(document.getElementById('fieldSize').value);
+      this.updateUrlState(); this.loadPipelineData(); this.loadObservationsData();
+    });
+    document.getElementById('maskToggle').addEventListener('change', e => { this.viewer.showMask = e.target.checked; this.viewer.render(); });
+    document.getElementById('catalogToggle').addEventListener('change', () => this.loadCatalogs());
+    document.getElementById('exportMp4Btn').addEventListener('click', () => this.exportGif('mp4'));
+    document.getElementById('embedBtn').addEventListener('click', async () => {
+      const url = new URL(location.href); url.searchParams.set('embed', '1');
+      await navigator.clipboard.writeText(`<iframe src="${url.href}" title="SPHEREx sky flipbook" width="800" height="600" loading="lazy"></iframe>`);
+      document.getElementById('scienceNotes').textContent = 'Embed code copied.';
+    });
+    if (new URLSearchParams(location.search).get('embed') === '1') document.body.classList.add('embed');
     // 1. Benchmark Presets
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
         e.currentTarget.classList.add('active');
         this.state.target = e.currentTarget.dataset.target;
+        this.state.mode = "within_visit_fast";
+        this.state.colorMode = "grayscale";
+        this.state.frameMode = "inertial";
         
         // Intelligent default detector for specific physical targets
         if (this.state.target.includes("Barnard")) this.setDetector("D1");
         else if (this.state.target.includes("Epsilon")) this.setDetector("D3");
-        else if (this.state.target.includes("RW Aurigae")) this.setDetector("D2");
+        else if (this.state.target.includes("RW Aurigae")) this.setDetector("D3");
         else if (this.state.target.includes("R Draconis")) this.setDetector("D4");
         else this.setDetector("D6");
-
+        this.syncUIWithState();
         this.updateUrlState();
         this.loadPipelineData();
         this.loadObservationsData();
@@ -224,6 +247,8 @@ class SpherexApp {
         document.querySelectorAll('[data-fov]').forEach(b => b.classList.remove('active'));
         e.currentTarget.classList.add('active');
         this.state.fovMode = e.currentTarget.dataset.fov;
+        this.state.fov = this.state.fovMode === 'wide' ? 15 : 6.5;
+        document.getElementById('fieldSize').value = this.state.fov;
         this.updateUrlState();
         this.loadPipelineData();
       });
@@ -254,7 +279,9 @@ class SpherexApp {
     // 6. Overlay Toggles (Reticle, Compass, Stars, Trail, Wipe)
     this.setupOverlayToggle('toggleReticleBtn', 'showReticle');
     this.setupOverlayToggle('toggleCompassBtn', 'showCompass');
-    this.setupOverlayToggle('toggleStarsBtn', 'showStars');
+    document.getElementById('toggleStarsBtn').addEventListener('click', () => {
+      const toggle = document.getElementById('catalogToggle'); toggle.checked = !toggle.checked; this.loadCatalogs();
+    });
     this.setupOverlayToggle('toggleTrailBtn', 'showTrail');
     this.setupOverlayToggle('toggleWipeBtn', 'showWipe');
 
@@ -327,18 +354,18 @@ class SpherexApp {
     
     if (shortcutsBtn && shortcutsModal) {
       shortcutsBtn.addEventListener('click', () => {
-        shortcutsModal.classList.add('open');
+        shortcutsModal.showModal();
       });
     }
     if (closeShortcutsBtn && shortcutsModal) {
       closeShortcutsBtn.addEventListener('click', () => {
-        shortcutsModal.classList.remove('open');
+        shortcutsModal.close();
       });
     }
     if (shortcutsModal) {
       shortcutsModal.addEventListener('click', (e) => {
         if (e.target === shortcutsModal) {
-          shortcutsModal.classList.remove('open');
+          shortcutsModal.close();
         }
       });
     }
@@ -401,11 +428,11 @@ class SpherexApp {
       } else if (e.key === '?') {
         e.preventDefault();
         if (shortcutsModal) {
-          shortcutsModal.classList.toggle('open');
+          shortcutsModal.open ? shortcutsModal.close() : shortcutsModal.showModal();
         }
       } else if (e.key === 'Escape') {
-        if (shortcutsModal && shortcutsModal.classList.contains('open')) {
-          shortcutsModal.classList.remove('open');
+        if (shortcutsModal && shortcutsModal.open) {
+          shortcutsModal.close();
         }
       }
     });
@@ -427,15 +454,26 @@ class SpherexApp {
     if (!btn) return;
     if (this.state.isPlaying) {
       btn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-      btn.title = "Pause Flipbook (Space)";
+      btn.title = "Pause Flipbook (Space)"; btn.setAttribute("aria-label", "Pause flipbook");
     } else {
       btn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg>`;
-      btn.title = "Play Flipbook (Space)";
+      btn.title = "Play Flipbook (Space)"; btn.setAttribute("aria-label", "Play flipbook");
     }
   }
 
   async loadPipelineData() {
+    this.pendingRequest?.abort();
+    const controller = new AbortController(); this.pendingRequest = controller;
+    document.getElementById('loadingProgress').hidden = false;
+    document.getElementById('flipbookCanvas').setAttribute('aria-busy', 'true');
     this.stopPlayback();
+    this.pipelineData = null;
+    this.viewer.currentFrame = null;
+    this.viewer.ctx.clearRect(0, 0, this.viewer.canvas.width, this.viewer.canvas.height);
+    this.spectrumChart.setData({spectrum: []});
+    this.updateFlickerAudit(null);
+    this.updateAstrometryHUD(null, {});
+    document.querySelector('#spectrumTable tbody').replaceChildren();
     const statusEl = document.getElementById('systemStatusText');
     const message = document.getElementById('viewerMessage');
     if (message) {
@@ -446,14 +484,21 @@ class SpherexApp {
     if (statusEl) statusEl.textContent = 'Loading observations';
 
     // Standardized endpoint conforming to Section 9.2 with real FITS and FOV support
-    const url = `/api/frames?q=${encodeURIComponent(this.state.target)}&det=${this.state.detector}&mode=${this.state.mode}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
+    const url = `/api/frames?q=${encodeURIComponent(this.state.target)}&det=${this.state.detector}&mode=${this.state.mode}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov=${this.state.fov}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
     
     try {
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`Observation request failed (${resp.status})`);
+      const resp = await fetch(url, {signal: controller.signal});
       const data = await resp.json();
+      if (!resp.ok) throw new Error(data.message || `Observation request failed (${resp.status})`);
       if (!data.frames?.length) throw new Error(data.message || 'No frames returned');
+      if (this.pendingRequest !== controller) return;
       this.pipelineData = data;
+      document.getElementById('scienceNotes').textContent = (data.manifest?.notes || []).join(' ');
+      const tbody = document.querySelector('#spectrumTable tbody'); tbody.replaceChildren();
+      for (const point of data.spectrophotometry?.spectrum || []) {
+        const row = tbody.insertRow();
+        for (const value of [point.wavelength_um, point.flux_mjy, point.flux_err_mjy, point.mjd]) row.insertCell().textContent = Number.isFinite(value) ? value.toFixed(4) : '—';
+      }
       if (this.state.sourceMode === 'auto') {
         document.getElementById('sourceRealBtn').classList.toggle('active', data.is_real_data);
         document.getElementById('sourceSimBtn').classList.toggle('active', !data.is_real_data);
@@ -476,6 +521,7 @@ class SpherexApp {
       this.updateAstrometryHUD(data.astrometric_validation, data.target);
 
       // Update Planet Nine / TNO Detectability & Calibration HUD
+      for (const id of ['p9SingleVisitDepth','p9CoaddDepth','p9ZodiStatus','p9FlagsStatus']) document.getElementById(id).textContent = 'Not measured';
       if (data.planet_nine_detectability) {
         const p9 = data.planet_nine_detectability;
         const elSingle = document.getElementById('p9SingleVisitDepth');
@@ -499,6 +545,7 @@ class SpherexApp {
 
       // Render first frame & start loop
       this.renderFrame(0);
+      if (document.getElementById("catalogToggle").checked) this.loadCatalogs();
       if (message) message.hidden = true;
       if (this.state.isPlaying) {
         this.startPlayback();
@@ -512,12 +559,18 @@ class SpherexApp {
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError' || this.pendingRequest !== controller) return;
       console.error('Failed to load pipeline data:', err);
       if (statusEl) statusEl.textContent = 'Observations unavailable';
       if (message) {
         message.hidden = false;
         message.querySelector('strong').textContent = 'Could not load observations';
         message.querySelector('span').textContent = err.message || 'Select another target or try the simulation source.';
+      }
+    } finally {
+      if (this.pendingRequest === controller) {
+        document.getElementById('loadingProgress').hidden = true;
+        document.getElementById('flipbookCanvas').setAttribute('aria-busy', 'false');
       }
     }
   }
@@ -534,7 +587,7 @@ class SpherexApp {
         tbody.replaceChildren();
         for (const v of obs.visits || []) {
           const row = document.createElement('tr');
-          for (const value of [v.visit + 1, '—', v.first || '—', '—', `${v.n_exposures} exps`, (v.detectors || []).join(', ')]) {
+          for (const value of [v.visit + 1, (v.detectors || []).join(', '), v.first || '—', Number.isFinite(v.mjd_mid) ? v.mjd_mid.toFixed(3) : '—', `${v.n_exposures} exps`, obs.source || '—']) {
             const cell = document.createElement('td');
             cell.textContent = value;
             row.appendChild(cell);
@@ -681,7 +734,7 @@ class SpherexApp {
     const elPm = document.getElementById('astFittedPm');
     if (elPm) elPm.textContent = astro.fitted_pm
       ? `${astro.fitted_pm.fitted_total_pm_arcsec_yr}"/yr (${astro.fitted_pm.fitted_total_pm_mas_yr} mas/yr)`
-      : `${astro.proper_motion_total_arcsec_yr}"/yr (catalog)`;
+      : 'Not measured';
     const elRes = document.getElementById('astGaiaResidual');
     if (elRes) elRes.textContent = astro.residuals
       ? `${astro.residuals.total_residual_mas_yr} mas/yr`
@@ -713,9 +766,31 @@ class SpherexApp {
     this.auditChart.setData(audit);
   }
 
-  exportGif() {
-    const url = `/api/export/gif?target=${encodeURIComponent(this.state.target)}&detector=${this.state.detector}&mode=${this.state.mode}&fps=${this.state.fps}&source=${this.state.sourceMode}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
-    window.open(url, '_blank');
+  async loadCatalogs() {
+    const data = this.pipelineData;
+    const enabled = document.getElementById('catalogToggle').checked;
+    const status = document.getElementById('catalogStatus');
+    if (!data) return;
+    this.viewer.showStars = enabled;
+    document.getElementById('toggleStarsBtn').classList.toggle('active', enabled);
+    if (!enabled) { this.renderFrame(this.state.currentFrameIdx); status.textContent = ''; return; }
+    if (!data.is_real_data) { status.textContent = 'Catalogue references are available for real observations.'; return; }
+    status.textContent = 'Requesting catalogue references…';
+    try {
+      const frame = data.frames[this.state.currentFrameIdx];
+      const response = await fetch(`/api/overlay/catalogs?q=${encodeURIComponent(this.state.target)}&fov=${this.state.fov}&mjd=${frame.mjd}`);
+      const result = await response.json();
+      if (this.pipelineData !== data) return;
+      if (!response.ok) throw new Error(result.message);
+      data.field_stars = [...result.gaia_dr3, ...result.catwise];
+      status.textContent = `${data.field_stars.length} references. ${result.note} ${result.errors.join(' ')}`;
+      this.renderFrame(this.state.currentFrameIdx);
+    } catch (error) { status.textContent = `Catalogue references unavailable: ${error.message}`; }
+  }
+
+  exportGif(format = "gif") {
+    const url = `/api/export/${format}?target=${encodeURIComponent(this.state.target)}&detector=${this.state.detector}&mode=${this.state.mode}&fps=${this.state.fps}&frame_mode=${this.state.frameMode}&color_mode=${this.state.colorMode}&source=${this.state.sourceMode}&fov=${this.state.fov}&fov_mode=${this.state.fovMode}&blink_mode=${this.state.blinkMode}`;
+    window.open(url, '_blank', 'noopener');
   }
 
   exportCsv() {

@@ -16,7 +16,7 @@ const target = { common_name: 'Test star', spectral_type: 'M', teff_k: 3000, dis
 
 // Archive and simulated responses have different astrometry contracts.
 update({ proper_motion_total_arcsec_yr: 10.4 }, target);
-assert.equal(elements.astFittedPm.textContent, '10.4"/yr (catalog)');
+assert.equal(elements.astFittedPm.textContent, 'Not measured');
 assert.equal(elements.astGaiaResidual.textContent, 'Not measured');
 assert.match(elements.astVerdict.textContent, /not available/);
 

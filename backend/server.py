@@ -27,9 +27,11 @@ from backend.track3_spectrophotometry.astrometric_validator import query_live_ga
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.pipeline import execute_pipeline, generate_gif_export
 from backend.data_loader import target_catalog
+from backend.targets import resolve as resolve_metadata
+from backend.real_pipeline import load as load_real, local_paths, spectrum as real_spectrum
 
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
-VALIDATION_SUMMARY_FILE = os.path.join(PROJECT_ROOT, "backend", "cache", "validation_summary.json")
+VALIDATION_SUMMARY_FILE = os.path.join(PROJECT_ROOT, "docs", "validation.json")
 GAIA_OVERLAY_MEMORY_CACHE: Dict[str, List[Dict[str, Any]]] = {}
 
 
@@ -47,7 +49,7 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=FRONTEND_DIR, **kwargs)
 
     def _send_json(self, data: Any, status: int = 200):
-        body = json.dumps(data, indent=2 if status != 200 else None).encode("utf-8")
+        body = json.dumps(data, allow_nan=False, indent=2 if status != 200 else None).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -118,7 +120,7 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             benchmarks = get_benchmark_list()
             archive_targets = target_catalog.list_available_targets()
             for b in benchmarks:
-                b["has_real_fits"] = target_catalog.has_real_data(b.get("common_name", "")) or target_catalog.has_real_data(b.get("name", ""))
+                b["has_real_fits"] = bool(local_paths(resolve_metadata(b["name"])))
             self._send_json({
                 "status": "success",
                 "targets": benchmarks,
@@ -132,7 +134,11 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         if path == "/api/resolve":
             target_q = query.get("q", ["WISE 0855-0714"])[0]
             epoch = float(query.get("epoch", [2025.8])[0])
-            resolved = resolve_target(target_q, target_epoch=epoch)
+            from backend.science import position
+            from astropy.time import Time
+            target = resolve_metadata(target_q)
+            ra, dec = position(target, Time(epoch,format='jyear').mjd)
+            resolved = {'target':target,'epoch':epoch,'ra_deg':ra,'dec_deg':dec,'note':'Catalogue linear proper motion; no annual parallax correction.'}
             self._send_json(resolved)
             return
 
@@ -140,27 +146,21 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 4: Discovered Observations & Visits (Section 9.2)
         # -------------------------------------------------------------
         if path == "/api/observations":
-            from backend.track1.archive import search
-            from backend.track1.visits import group_visits, summarize
-            try:
-                target_q = query.get("q", ["WISE 0855-0714"])[0]
-                fov = float(query.get("fov", [6.5])[0])
-                if not 0 < fov <= 15:
-                    raise ValueError("Field of view must be between 0 and 15 arcminutes")
-                if "ra" in query and "dec" in query:
-                    ra, dec = float(query["ra"][0]), float(query["dec"][0])
-                else:
-                    resolved = resolve_target(target_q)
-                    position = resolved["epoch_propagation"]
-                    ra, dec = position["ra_prop_deg"], position["dec_prop_deg"]
-                exposures = group_visits(search(ra, dec, size_deg=fov / 60))
-                visits = summarize(exposures)
-                self._send_json({"status": "success", "source": "IRSA", "visits": visits,
-                                 "n_visits_found": len(visits), "n_exposures": len(exposures)})
-            except ValueError as exc:
-                self._send_json({"status": "error", "message": str(exc)}, status=400)
-            except Exception:
-                self._send_json({"status": "unavailable", "message": "IRSA observation discovery failed."}, status=503)
+            target_q = query.get("q", ["Barnard's Star"])[0]
+            if "ra" in query and "dec" in query:
+                target_q = query["ra"][0] + "," + query["dec"][0]
+            target = resolve_metadata(target_q)
+            exposures, _, _, errors, provenance = load_real(target, query.get("det",["D6"])[0], float(query.get("fov",[6.5])[0]))
+            observations=[]
+            for v in sorted({e.visit for e in exposures}):
+                members=[e for e in exposures if e.visit==v]
+                from astropy.time import Time
+                observations.append({"visit":v,"n_exposures":len(members),
+                                     "first":Time(min(e.mjd for e in members),format="mjd").isot,
+                                     "mjd_mid":sum(e.mjd for e in members)/len(members),
+                                     "detectors":sorted({e.detector for e in members})})
+            self._send_json({"status":"success","visits":observations,"n_visits_found":len(observations),
+                             "source":provenance,"errors":errors})
             return
 
         # -------------------------------------------------------------
@@ -169,6 +169,8 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # -------------------------------------------------------------
         if path in ("/api/frames", "/api/pipeline/run"):
             target_key = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
+            if "ra" in query and "dec" in query:
+                target_key = query["ra"][0] + "," + query["dec"][0]
             detector = query.get("det", query.get("detector", ["D6"]))[0].upper()
             mode = query.get("mode", ["visit_blink"])[0].lower()
             frame_mode = query.get("frame_mode", [None])[0]
@@ -202,8 +204,11 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         if path == "/api/spectrum":
             target_q = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
             source_mode = query.get("source", ["auto"])[0].lower()
-            target = get_target_by_query(target_q)
-            spectrum_data = extract_102_channel_spectrum(target, source_mode=source_mode)
+            target = resolve_metadata(target_q)
+            if source_mode in ("auto", "real"):
+                spectrum_data = real_spectrum(load_real(target, "D6", float(query.get("fov", [6.5])[0]))[0])
+            else:
+                spectrum_data = extract_102_channel_spectrum(target, source_mode=source_mode)
             self._send_json(spectrum_data)
             return
 
@@ -211,80 +216,9 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 7: Catalog Overlays & Solar-System Vectors (Section 9.2)
         # -------------------------------------------------------------
         if path == "/api/overlay/catalogs":
-            target_q = query.get("q", ["WISE 0855-0714"])[0]
-            mjd = float(query.get("mjd", [60810.0])[0])
-            fov = float(query.get("fov", [6.5])[0])
-
-            # Propagate target coordinates to target MJD to center cone search
-            target_epoch = 2000.0 + (mjd - 51544.5) / 365.25
-            resolved = resolve_target(target_q, target_epoch=target_epoch)
-            target = resolved["target"]
-            prop = resolved["epoch_propagation"]
-            center_ra = prop["ra_prop_deg"]
-            center_dec = prop["dec_prop_deg"]
-
-            # In-memory caching for live Gaia DR3 queries
-            cache_key = f"{target['id']}_{round(mjd, 1)}_{round(fov, 2)}"
-            gaia_stars = GAIA_OVERLAY_MEMORY_CACHE.get(cache_key)
-            is_live_gaia = True
-
-            if gaia_stars is None:
-                try:
-                    gaia_stars = query_live_gaia_overlay(
-                        ra_deg=center_ra,
-                        dec_deg=center_dec,
-                        fov_arcmin=fov,
-                        target_mjd=mjd,
-                        grid_size=64,
-                        pixscale_arcsec=SPHEREx_PIXEL_SCALE_ARCSEC
-                    )
-                    if gaia_stars:
-                        GAIA_OVERLAY_MEMORY_CACHE[cache_key] = gaia_stars
-                except Exception as ex:
-                    print(f"[/api/overlay/catalogs] Live Gaia DR3 query failed: {ex}")
-                    gaia_stars = []
-
-            if not gaia_stars and query.get("source", ["real"])[0] in ("simulation", "simulated", "synthetic"):
-                is_live_gaia = False
-                sim_data = generate_simulated_target_visits(target_key=target["common_name"], detector="D6", grid_size=64)
-                gaia_stars = []
-                for s in sim_data["field_stars"]:
-                    gaia_stars.append({
-                        "source_id": f"Gaia DR3 {2026000000 + s['id']}",
-                        "pixel_x": round(s["x"], 2),
-                        "pixel_y": round(s["y"], 2),
-                        "g_mag": round(14.5 + (s["id"] % 6) * 0.8, 2),
-                        "teff_k": round(s["teff"], 0),
-                        "ruwe": round(1.02 + (s["id"] % 5) * 0.05, 2),
-                        "is_variable": False
-                    })
-
-            if not gaia_stars:
-                is_live_gaia = False
-
-            skybot_objects = []
-            if "Planet X" in target["common_name"] and query.get("source", ["real"])[0] in ("simulation", "simulated", "synthetic"):
-                skybot_objects.append({
-                    "object_name": "Asteroid (2026 PX-Candidate)",
-                    "pixel_x": 32.0,
-                    "pixel_y": 32.0,
-                    "motion_rate_arcsec_hr": 1.45,
-                    "position_angle_deg": 242.0
-                })
-
-            payload = {
-                "status": "success",
-                "target": target["common_name"],
-                "epoch_mjd": mjd,
-                "center_ra_deg": center_ra,
-                "center_dec_deg": center_dec,
-                "source": "ESA Gaia DR3 (Live TAP + Proper Motion Propagated)" if is_live_gaia else ("Simulated Field Stars" if gaia_stars else "unavailable"),
-                "is_live_gaia": is_live_gaia,
-                "gaia_dr3": gaia_stars,
-                "catwise": [],
-                "skybot": skybot_objects
-            }
-            self._send_json(payload)
+            from backend.catalog_overlays import overlays
+            target = resolve_metadata(query.get("q", ["WISE 0855-0714"])[0])
+            self._send_json(overlays(target, float(query.get("mjd", [61000])[0]), float(query.get("fov", [6.5])[0])))
             return
 
         # -------------------------------------------------------------
@@ -311,6 +245,8 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # -------------------------------------------------------------
         if path in ("/api/export/gif", "/api/export.gif", "/api/export/mp4", "/api/export.mp4"):
             target_key = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
+            if "ra" in query and "dec" in query:
+                target_key = query["ra"][0] + "," + query["dec"][0]
             detector = query.get("det", query.get("detector", ["D6"]))[0].upper()
             mode = query.get("mode", ["visit_blink"])[0].lower()
             fps = max(1, min(15, int(query.get("fps", [4])[0])))
@@ -326,9 +262,13 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
                 source_mode=source_mode,
                 fov_mode=fov_mode,
                 blink_mode=blink_mode,
+                fov_arcmin=float(query.get("fov", [6.5])[0]),
+                frame_mode=query.get("frame_mode", [None])[0],
+                color_mode=query.get("color_mode", [None])[0],
+                stretch=query.get("stretch", ["asinh"])[0],
             )
             fov_suffix = f"_{fov_mode}" if fov_mode else ""
-            filename = f"spherex_{target_key.replace(' ', '_').lower()}_{detector}_{mode}{fov_suffix}.gif"
+            filename = f"spherex_{detector}_{mode}.gif"
             if path.endswith("mp4"):
                 from backend.media import gif_to_mp4
                 self._send_binary(gif_to_mp4(gif_bytes), "video/mp4", filename[:-4] + ".mp4")

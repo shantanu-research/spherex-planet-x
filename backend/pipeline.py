@@ -51,9 +51,15 @@ def execute_pipeline(
 ) -> Dict[str, Any]:
     """
     Executes complete 4-track scientific pipeline supporting the 7 Unified Viewing Modes (Section 9.1).
-    Supports both calibrated real FITS data archives (SPHEREx D1-D6 / NEOWISE multi-epoch)
+    Supports calibrated SPHEREx D1-D6 FITS observations
     and synthetic benchmark cubes.
     """
+    if not math.isfinite(fov_arcmin) or not 1 <= fov_arcmin <= 15:
+        raise ValueError("Field of view must be 1–15 arcminutes")
+    if stretch not in ('asinh','sqrt','log','linear'):
+        raise ValueError("Unknown display stretch")
+    if frame_mode not in (None,'inertial','comoving') or color_mode not in (None,'grayscale','spectral','multiband'):
+        raise ValueError("Unknown frame or color mode")
     effective_mode = mode.lower()
     detector = detector.upper()
 
@@ -92,167 +98,19 @@ def execute_pipeline(
         eff_process_mode = process_mode or "balanced"
 
     # 1. Track 1: Ingestion & Resolution
-    resolved = resolve_target(target_key)
-    target_meta = resolved["target"]
+    from backend.targets import resolve
+    target_meta = resolve(target_key)
+    resolved = {"target": target_meta, "stale_epoch_warning": None}
 
     # Determine effective FOV mode: 'wide' (30' wide field) or 'core' (6.5' center stamp)
     eff_fov_mode = fov_mode or ("wide" if fov_arcmin >= 20.0 else "core")
     eff_blink_mode = blink_mode or ("temporal" if ("temporal" in effective_mode or "epoch" in effective_mode) else "spectral")
 
-    # Check if target should use real FITS archives or synthetic simulation
-    use_real = False
-    if source_mode == "real":
-        use_real = target_catalog.has_real_data(target_key)
-    elif source_mode == "auto":
-        # Auto mode: Use real data for archive targets, keeping WISE 0855 as default 4-visit benchmark suite
-        if target_catalog.has_real_data(target_key):
-            use_real = True
-
-    if use_real:
-        real_raw_frames = target_catalog.get_target_frames(
-            target_name_or_key=target_key,
-            fov_mode=eff_fov_mode,
-            blink_mode=eff_blink_mode,
-            stretch_type=stretch,
-            resample_grid=True
-        )
-        if real_raw_frames:
-            w = real_raw_frames[0]["width"]
-            h = real_raw_frames[0]["height"]
-            active_fov = real_raw_frames[0]["fov_arcmin"]
-            pixel_scale = real_raw_frames[0]["pixel_scale_arcsec"]
-
-            # Fetch real Gaia reference stars
-            field_stars = target_catalog.get_gaia_stars(target_key, grid_size=w, fov_arcmin=active_fov)
-
-            rendered_frames = []
-            center_x = w / 2.0
-            center_y = h / 2.0
-
-            for idx, rf in enumerate(real_raw_frames):
-                px_list = rf["pixels"]
-                rgb_frame = []
-
-                # Determine color treatment
-                if eff_color_mode == "grayscale" or eff_blink_mode == "temporal":
-                    for y in range(h):
-                        row = []
-                        y_off = y * w
-                        for x in range(w):
-                            val = px_list[y_off + x]
-                            row.append((val, val, val))
-                        rgb_frame.append(row)
-                else:
-                    # Multi-detector spectral false color
-                    det_tag = rf["band"].replace("SPHEREx-", "").strip() if "SPHEREx-" in rf["band"] else detector
-                    weights = DETECTOR_SUPERPOSITION_WEIGHTS.get(det_tag, (0.85, 0.85, 0.85))
-                    for y in range(h):
-                        row = []
-                        y_off = y * w
-                        for x in range(w):
-                            val = px_list[y_off + x]
-                            r = min(255, int(val * weights[0] * 1.25))
-                            g = min(255, int(val * weights[1] * 1.25))
-                            b = min(255, int(val * weights[2] * 1.25))
-                            row.append((r, g, b))
-                        rgb_frame.append(row)
-
-                # Astrometric position
-                if eff_blink_mode == "temporal":
-                    epoch_diff = rf["epoch_year"] - target_meta.get("discovery_epoch", 2014.0)
-                    pm_ra_mas = target_meta.get("pm_ra_mas", 0.0)
-                    pm_dec_mas = target_meta.get("pm_dec_mas", 0.0)
-                    drift_px_x = -(pm_ra_mas / 1000.0 * epoch_diff) / pixel_scale
-                    drift_px_y = (pm_dec_mas / 1000.0 * epoch_diff) / pixel_scale
-                    tgt_pos = (round(center_x + drift_px_x, 1), round(center_y - drift_px_y, 1))
-                    tgt_disp = (round(drift_px_x, 2), round(drift_px_y, 2))
-                else:
-                    tgt_pos = (round(center_x, 1), round(center_y, 1))
-                    tgt_disp = (0.0, 0.0)
-
-                rendered_frames.append({
-                    "frame_id": rf["frame_id"],
-                    "visit_id": rf["band"],
-                    "label": rf["label"],
-                    "instrument": rf["instrument"],
-                    "date_utc": rf["date_obs"],
-                    "epoch_year": rf["epoch_year"],
-                    "mjd": rf["mjd"],
-                    "target_pos_px": tgt_pos,
-                    "target_displacement_px": tgt_disp,
-                    "wavelength_um": rf["wavelength_um"],
-                    "wavelength_range": rf["wavelength_range"],
-                    "fov_arcmin": rf["fov_arcmin"],
-                    "pixel_scale_arcsec": pixel_scale,
-                    "is_real_data": True,
-                    "source_file": rf["source_file"],
-                    "zodi_subtracted": rf.get("zodi_subtracted", False),
-                    "cosmic_rays_masked": rf.get("cosmic_rays_masked", 0),
-                    "stats": rf["stats"],
-                    "rgb_pixels": rgb_frame
-                })
-
-            # These measurements require independent analysis of the actual images.
-            # Never substitute catalogue values or fixed example metrics for a fit.
-            flicker_audit = None
-            astrometric_validation = None
-            p9_detectability = None
-            spectrum_data = {"status": "unavailable", "spectrum": [],
-                             "message": "Real-data spectrum has not been computed."}
-
-            manifest = {
-                "target": target_meta["common_name"],
-                "category": target_meta["category"],
-                "detector": detector,
-                "mode": effective_mode,
-                "frame_mode": eff_frame_mode,
-                "color_mode": eff_color_mode,
-                "process_mode": eff_process_mode,
-                "grid_size": w,
-                "pixel_scale_arcsec": pixel_scale,
-                "fov_arcmin": active_fov,
-                "fov_mode": eff_fov_mode,
-                "blink_mode": eff_blink_mode,
-                "is_real_data": True,
-                "archive_provenance": "NASA / IPAC SPHEREx Level-2 Cutout Archive & WISE Multi-Epoch Time-Series",
-                "planet_nine_detectability": p9_detectability,
-                "n_frames": len(rendered_frames),
-                "stretches": {
-                    "stretch_type": stretch,
-                    "vmin": rendered_frames[0]["stats"].get("p_low", 0.0),
-                    "vmax": rendered_frames[0]["stats"].get("p_high", 255.0),
-                },
-                "scientific_disclaimer": (
-                    "Exact calibrated science data from NASA SPHEREx Level-2 (QR2) and WISE cutouts. "
-                    "Rendered with astrophysical Asinh dynamic range compression."
-                ),
-            }
-
-            return {
-                "status": "success",
-                "manifest": manifest,
-                "target": target_meta,
-                "stale_epoch_warning": resolved["stale_epoch_warning"],
-                "detector": detector,
-                "mode": effective_mode,
-                "frame_mode": eff_frame_mode,
-                "color_mode": eff_color_mode,
-                "process_mode": eff_process_mode,
-                "grid_size": w,
-                "fov_mode": eff_fov_mode,
-                "blink_mode": eff_blink_mode,
-                "is_real_data": True,
-                "flicker_audit": flicker_audit,
-                "astrometric_validation": astrometric_validation,
-                "planet_nine_detectability": p9_detectability,
-                "spectrophotometry": spectrum_data,
-                "field_stars": field_stars,
-                "frames": rendered_frames,
-            }
-
-    if source_mode not in ("simulation", "simulated", "synthetic"):
-        from backend.live_frames import render_live
-        return render_live(target_meta, detector, fov_arcmin, effective_mode)
+    if source_mode in ('auto', 'real'):
+        from backend.real_pipeline import render
+        return render(target_meta, detector, fov_arcmin, effective_mode, stretch, frame_mode, color_mode)
+    if source_mode not in ('simulated', 'simulation', 'synthetic'):
+        raise ValueError('Source must be real, auto or simulated')
 
     # Generate multi-epoch Level-2 simulation
     sim_data = generate_simulated_target_visits(target_key=target_key, detector=detector, grid_size=64)
@@ -486,6 +344,10 @@ def generate_gif_export(
     source_mode: str = "auto",
     fov_mode: Optional[str] = None,
     blink_mode: Optional[str] = None,
+    fov_arcmin: float = 6.5,
+    frame_mode: Optional[str] = None,
+    color_mode: Optional[str] = None,
+    stretch: str = "asinh",
 ) -> bytes:
     """Compiles deterministic animated GIF with burned-in HUD telemetry."""
     pipeline_res = execute_pipeline(
@@ -495,16 +357,19 @@ def generate_gif_export(
         source_mode=source_mode,
         fov_mode=fov_mode,
         blink_mode=blink_mode,
+        fov_arcmin=fov_arcmin, frame_mode=frame_mode, color_mode=color_mode, stretch=stretch,
     )
     raw_frames = pipeline_res["frames"]
     if not raw_frames:
         raise ValueError(pipeline_res.get("message", "No frames are available to export"))
     hud_frames = []
 
-    mode_label = f"{mode.upper()}"
+    from PIL import Image
+    import numpy as np
+    mode_label = ("REAL " if pipeline_res.get("is_real_data") else "SIMULATED ") + mode.upper()
     for f in raw_frames:
         hud_frame = burn_telemetry_hud(
-            rgb_frame=f["rgb_pixels"],
+            rgb_frame=np.asarray(Image.fromarray(np.asarray(f["rgb_pixels"], dtype=np.uint8)).resize((384,384), Image.Resampling.NEAREST)).tolist(),
             target_name=pipeline_res["target"]["common_name"],
             visit_id=f.get("visit_id") or f.get("label", "Frame"),
             mjd=f.get("mjd", 60810.0),
@@ -515,27 +380,16 @@ def generate_gif_export(
 
     delay_ms = max(50, int(1000 / max(1, fps)))
 
-    # Fast PIL GIF encoding with palette optimization
-    try:
-        from PIL import Image
-        import numpy as np
-        pil_images = [Image.fromarray(np.array(f, dtype=np.uint8), mode="RGB") for f in hud_frames]
-        if pil_images:
-            bio = io.BytesIO()
-            pil_images[0].save(
-                bio,
-                format="GIF",
-                save_all=True,
-                append_images=pil_images[1:],
-                duration=delay_ms,
-                loop=0,
-                optimize=True,
-            )
-            return bio.getvalue()
-    except Exception:
-        pass
+    # Pillow is a runtime dependency: do not fall back to the legacy LZW encoder,
+    # which corrupts some nontrivial images while passing header-only checks.
+    from PIL import Image
+    import numpy as np
+    pil_images = [Image.fromarray(np.array(f, dtype=np.uint8)) for f in hud_frames]
+    bio = io.BytesIO()
+    pil_images[0].save(bio, format="GIF", save_all=True,
+                       append_images=pil_images[1:], duration=delay_ms, loop=0)
+    return bio.getvalue()
 
-    return encode_gif_stream(hud_frames, delay_ms=delay_ms)
 
 
 __all__ = [

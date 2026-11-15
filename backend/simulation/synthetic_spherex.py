@@ -6,6 +6,7 @@ Generates physically grounded SPHEREx multi-visit cutouts including the real LVF
 from typing import List, Dict, Any, Tuple
 import math
 import random
+import hashlib
 from ..track1_orchestration.catalog import BENCHMARK_TARGETS
 from ..track1_orchestration.resolver import propagate_coordinates, SPHEREx_PIXEL_SCALE_ARCSEC
 from ..track2_calibration.band_balancer import DETECTOR_SPECS, get_channel_wavelength
@@ -106,7 +107,7 @@ def generate_simulated_target_visits(
         {"mjd": 61365.0, "epoch_yr": 2026.89, "date": "2026-11-21 16:30:00 UTC", "pass": "Survey 4"}
     ][:n_visits]
 
-    field_stars = generate_stationary_field_stars(seed=42 + hash(target_key) % 1000, grid_size=grid_size, n_stars=24)
+    field_stars = generate_stationary_field_stars(seed=42 + int.from_bytes(hashlib.sha256(target_key.encode()).digest()[:4], "big") % 1000, grid_size=grid_size, n_stars=24)
     
     # Target starting position in stamp center
     u0 = grid_size / 2.0

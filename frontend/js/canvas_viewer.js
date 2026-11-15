@@ -14,8 +14,9 @@ class FlipbookViewer {
     
     // Overlay display toggles
     this.showReticle = true;
+    this.showMask = false;
     this.showCompass = true;
-    this.showStars = true;
+    this.showStars = false;
     this.showTrail = true;
     this.showWipe = false;
     this.wipeRatio = 0.5;
@@ -110,9 +111,9 @@ class FlipbookViewer {
       const fovArcmin = (this.currentFrame && this.currentFrame.fov_arcmin) ? this.currentFrame.fov_arcmin : ((w * pixelScale) / 60.0);
 
       if (pxX >= 0 && pxX < w && pxY >= 0 && pxY < h) {
-        const dArcsecX = (pxX - w / 2) * pixelScale;
-        const dArcsecY = (h / 2 - pxY) * pixelScale;
-        this.coordReadoutEl.textContent = `PX [${pxX}, ${pxY}] | dRA ${dArcsecX > 0 ? '+' : ''}${dArcsecX.toFixed(1)}" | dDec ${dArcsecY > 0 ? '+' : ''}${dArcsecY.toFixed(1)}" | ${fovArcmin.toFixed(1)}' FOV`;
+        const dArcsecX = ((w-1) / 2 - pxX) * pixelScale;
+        const dArcsecY = ((h-1) / 2 - pxY) * pixelScale;
+        this.coordReadoutEl.textContent = `PX [${pxX}, ${pxY}] | dRA*cosDec ${dArcsecX > 0 ? '+' : ''}${dArcsecX.toFixed(1)}" | dDec ${dArcsecY > 0 ? '+' : ''}${dArcsecY.toFixed(1)}" | ${fovArcmin.toFixed(1)}' FOV`;
       } else {
         this.coordReadoutEl.textContent = `FOV ${fovArcmin.toFixed(1)}' | ${pixelScale.toFixed(2)}"/px`;
       }
@@ -179,6 +180,11 @@ class FlipbookViewer {
     this.ctx.imageSmoothingEnabled = false;
     this.ctx.clearRect(0, 0, cWidth, cHeight);
 
+    if (this.showMask && this.currentFrame.mask) {
+      const context = currentOff.canvas.getContext('2d');
+      context.fillStyle = '#ff39ab';
+      this.currentFrame.mask.forEach((row,y) => row.forEach((v,x) => { if(v) context.fillRect(x,y,1,1); }));
+    }
     // Apply Zoom & Pan Transform
     this.ctx.save();
     this.ctx.translate(cWidth / 2 + this.panOffset.x, cHeight / 2 + this.panOffset.y);
@@ -255,7 +261,7 @@ class FlipbookViewer {
         const boxSize = 8 / this.zoomLevel;
         this.ctx.strokeRect(sx - boxSize/2, sy - boxSize/2, boxSize, boxSize);
         if (i < 4) {
-          this.ctx.fillText(`Gaia ${s.id}`, sx + boxSize/2 + 3, sy - 2);
+          this.ctx.fillText(`${s.catalog || "Sim"} ${s.id}`, sx + boxSize/2 + 3, sy - 2);
         }
       }
       this.ctx.restore();

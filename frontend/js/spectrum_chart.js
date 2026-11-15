@@ -79,14 +79,15 @@ class SpectrumChart {
     const lambdaMax = 5.002;
 
     const pts = this.data.spectrum;
-    let maxFlux = 0.1;
+    let maxFlux = 0.1, minFlux = 0;
     for (const p of pts) {
-      if (p.flux_mjy > maxFlux) maxFlux = p.flux_mjy;
+      maxFlux = Math.max(maxFlux, p.flux_mjy + p.flux_err_mjy);
+      minFlux = Math.min(minFlux, p.flux_mjy - p.flux_err_mjy);
     }
     maxFlux *= 1.15; // margin
 
     const xMap = (lam) => margin.left + ((lam - lambdaMin) / (lambdaMax - lambdaMin)) * pw;
-    const yMap = (flux) => margin.top + ph - (flux / maxFlux) * ph;
+    const yMap = (flux) => margin.top + ph - ((flux-minFlux) / (maxFlux-minFlux)) * ph;
 
     // 1. Draw Detector Bands (D1..D6) - Clean Monochrome Alternating
     const detectors = [
@@ -110,7 +111,7 @@ class SpectrumChart {
     }
 
     // 2. Draw Molecular Feature Markers (Delicate Silver Dashed)
-    const molecularFeatures = [
+    const molecularFeatures = this.data.source?.includes("real") ? [] : [
       { name: "H2O 1.4u", lam: 1.40 },
       { name: "H2O 1.9u", lam: 1.90 },
       { name: "CH4 2.2u", lam: 2.20 },
@@ -145,7 +146,7 @@ class SpectrumChart {
     ctx.lineWidth = 1;
     // Y-ticks
     for (let i = 0; i <= 4; i++) {
-      const fluxVal = (maxFlux / 4) * i;
+      const fluxVal = minFlux + ((maxFlux-minFlux) / 4) * i;
       const gy = yMap(fluxVal);
       ctx.beginPath();
       ctx.moveTo(margin.left, gy);
@@ -178,7 +179,7 @@ class SpectrumChart {
     ctx.beginPath();
     ctx.strokeStyle = "#a2d4c3";
     ctx.lineWidth = 2;
-    for (let i = 0; i < pts.length; i++) {
+    for (let i = 0; !this.data.source?.includes("real") && i < pts.length; i++) {
       const x = xMap(pts[i].wavelength_um);
       const y = yMap(pts[i].flux_mjy);
       if (i === 0) ctx.moveTo(x, y);
@@ -192,7 +193,7 @@ class SpectrumChart {
       const x = xMap(p.wavelength_um);
       const y = yMap(p.flux_mjy);
       const yErrTop = yMap(p.flux_mjy + p.flux_err_mjy);
-      const yErrBot = yMap(Math.max(0, p.flux_mjy - p.flux_err_mjy));
+      const yErrBot = yMap(p.flux_mjy - p.flux_err_mjy);
 
       ctx.strokeStyle = "rgba(162, 212, 195, 0.4)";
       ctx.lineWidth = 1;
@@ -220,7 +221,7 @@ class SpectrumChart {
       ctx.stroke();
 
       // Tooltip Card
-      const ttText1 = `${hp.detector} Ch ${hp.channel_in_detector} (${hp.wavelength_um.toFixed(3)} um)`;
+      const ttText1 = `${hp.detector} ${hp.mjd ? `MJD ${hp.mjd.toFixed(2)}` : `Ch ${hp.channel_in_detector}`} (${hp.wavelength_um.toFixed(3)} um)`;
       const ttText2 = `Flux: ${hp.flux_mjy.toFixed(3)} +/- ${hp.flux_err_mjy.toFixed(3)} mJy (SNR ${hp.snr})`;
       const ttWidth = 240;
       const ttX = Math.min(w - ttWidth - 10, Math.max(margin.left, hx - ttWidth / 2));

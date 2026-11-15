@@ -56,3 +56,5 @@ backend/cache/*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+data/observations/

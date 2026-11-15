@@ -1,0 +1,745 @@
+{
+  "description": "Coverage of supplied project FITS. Software success does not establish an astrophysical detection.",
+  "targets": [
+    {
+      "target": "Barnard's Star",
+      "detector": "D1",
+      "usable_exposures": 6,
+      "visits": 1,
+      "input_errors": [],
+      "modes": {
+        "visit_blink": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "longest_baseline": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "At least two observed visits are required."
+        },
+        "difference_sequence": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "At least two observed visits are required."
+        },
+        "motion_tracked": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "spectral_color": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "false_colour": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "wavelength_matched": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "No cross-visit exposures with matching wavelength coverage at this target"
+        },
+        "within_visit_fast": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "spectral_preview": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "shift_stack": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        }
+      },
+      "photometry": [
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60902.864714549,
+          "detector": "D6",
+          "source": "spherex_SPHEREx-D6_level2_2025W33_2C_0321_1D6_spx_l2b-v20-2025-266.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60902.86471456,
+          "detector": "D3",
+          "source": "spherex_SPHEREx-D3_level2_2025W33_2C_0321_1D3_spx_l2b-v20-2025-267.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60908.981928623,
+          "detector": "D2",
+          "source": "spherex_SPHEREx-D2_level2_2025W34_2B_0090_4D2_spx_l2b-v20-2025-267.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60908.981928623,
+          "detector": "D5",
+          "source": "spherex_SPHEREx-D5_level2_2025W34_2B_0090_4D5_spx_l2b-v20-2025-267.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60914.212530266,
+          "detector": "D1",
+          "source": "spherex_SPHEREx-D1_level2_2025W35_1A_0432_4D1_spx_l2b-v20-2025-269.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60914.212530278,
+          "detector": "D4",
+          "source": "spherex_SPHEREx-D4_level2_2025W35_1A_0432_4D4_spx_l2b-v20-2025-270.fits"
+        }
+      ]
+    },
+    {
+      "target": "WISE 0855-0714",
+      "detector": "D6",
+      "usable_exposures": 9,
+      "visits": 4,
+      "input_errors": [],
+      "modes": {
+        "visit_blink": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "longest_baseline": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "difference_sequence": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "motion_tracked": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "spectral_color": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "false_colour": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "wavelength_matched": {
+          "status": "success",
+          "frames": 2,
+          "reason": null
+        },
+        "within_visit_fast": {
+          "status": "success",
+          "frames": 4,
+          "reason": null
+        },
+        "spectral_preview": {
+          "status": "success",
+          "frames": 4,
+          "reason": null
+        },
+        "shift_stack": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        }
+      },
+      "photometry": [
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.2635881623071987,
+          "flux_err_mjy": 0.2410625566637523,
+          "snr": 1.0934429882234529,
+          "wavelength_um": 4.960982472288842,
+          "bandwidth_um": 0.03718698214150905,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60800.700028461,
+          "detector": "D6",
+          "source": "spherex_qr2_2025W19_1B_0116_1_D6_2025-05-05_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.7168485247537101,
+          "flux_err_mjy": 0.14009206975410446,
+          "snr": 5.1169814680584915,
+          "wavelength_um": 4.288541189320772,
+          "bandwidth_um": 0.03756082696773567,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60801.106596412,
+          "detector": "D5",
+          "source": "spherex_qr2_2025W19_1B_0181_1_D5_2025-05-06_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.6186048023579874,
+          "flux_err_mjy": 0.0751567351944988,
+          "snr": 8.23086315227896,
+          "wavelength_um": 0.992634410552263,
+          "bandwidth_um": 0.026346534189059398,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60801.514176944,
+          "detector": "D1",
+          "source": "spherex_qr2_2025W19_1B_0241_1_D1_2025-05-06_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.38828560671919027,
+          "flux_err_mjy": 0.11849450271827477,
+          "snr": 3.276823800361053,
+          "wavelength_um": 3.8152711091707046,
+          "bandwidth_um": 0.03559218031260794,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60986.240989132,
+          "detector": "D5",
+          "source": "spherex_qr2_2025W45_2A_0164_1_D5_2025-11-07_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.7363991514714705,
+          "flux_err_mjy": 0.19328470726396024,
+          "snr": 3.8099193769417217,
+          "wavelength_um": 4.442798362058752,
+          "bandwidth_um": 0.03656989168010506,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60989.298548414,
+          "detector": "D6",
+          "source": "spherex_qr2_2025W46_1A_0076_1_D6_2025-11-10_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.49240855335254546,
+          "flux_err_mjy": 0.10640188530900577,
+          "snr": 4.62781793689579,
+          "wavelength_um": 4.075567915959369,
+          "bandwidth_um": 0.036726665365453284,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61021.075439549,
+          "detector": "D5",
+          "source": "spherex_qr2_2025W50_2A_0164_1_D5_2025-12-12_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.7155465631513762,
+          "flux_err_mjy": 0.1547277538106193,
+          "snr": 4.6245521280375925,
+          "wavelength_um": 4.627271993583196,
+          "bandwidth_um": 0.03656663630173238,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61021.282827477,
+          "detector": "D6",
+          "source": "spherex_qr2_2025W50_2A_0232_1_D6_2025-12-12_cutout15arcmin.fits"
+        },
+        {
+          "status": "measured",
+          "flux_mjy": 0.7426966152257846,
+          "flux_err_mjy": 0.16326802339681895,
+          "snr": 4.5489410588421135,
+          "wavelength_um": 4.610885908228761,
+          "bandwidth_um": 0.03620840201838252,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61153.436457037,
+          "detector": "D6",
+          "source": "spherex_qr2_2026W17_1B_0634_1_D6_2026-04-23_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.30595590456359867,
+          "flux_err_mjy": 0.10907927738265066,
+          "snr": 2.8048948609212343,
+          "wavelength_um": 3.828273734190243,
+          "bandwidth_um": 0.03568648007261162,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61161.586867361,
+          "detector": "D5",
+          "source": "spherex_qr2_2026W18_2A_0247_1_D5_2026-05-01_cutout15arcmin.fits"
+        }
+      ]
+    },
+    {
+      "target": "Epsilon Indi B",
+      "detector": "D3",
+      "usable_exposures": 15,
+      "visits": 3,
+      "input_errors": [
+        "spherex_spherex_qr2_early_D4_2025W17_2025W17_4B_0077_2_D4_cutout15arcmin.fits: no usable pixels in requested field"
+      ],
+      "modes": {
+        "visit_blink": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "longest_baseline": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "difference_sequence": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "motion_tracked": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "spectral_color": {
+          "status": "success",
+          "frames": 2,
+          "reason": null
+        },
+        "false_colour": {
+          "status": "success",
+          "frames": 2,
+          "reason": null
+        },
+        "wavelength_matched": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "No cross-visit exposures with matching wavelength coverage at this target"
+        },
+        "within_visit_fast": {
+          "status": "success",
+          "frames": 3,
+          "reason": null
+        },
+        "spectral_preview": {
+          "status": "success",
+          "frames": 3,
+          "reason": null
+        },
+        "shift_stack": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        }
+      },
+      "photometry": [
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.14972603759884734,
+          "flux_err_mjy": 0.07119227896988277,
+          "snr": 2.103121852050663,
+          "wavelength_um": 1.5571297112564448,
+          "bandwidth_um": 0.037979294618814385,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60789.855521771,
+          "detector": "D2",
+          "source": "spherex_spherex_qr2_early_D2_2025W17_2025W17_4B_0017_1_D2_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.07090240003947665,
+          "flux_err_mjy": 0.13161458041778057,
+          "snr": -0.5387123509751967,
+          "wavelength_um": 4.329752282975317,
+          "bandwidth_um": 0.0376365535614331,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60789.855521782,
+          "detector": "D5",
+          "source": "spherex_spherex_qr2_early_D5_2025W17_2025W17_4B_0017_1_D5_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.15228013869308665,
+          "flux_err_mjy": 0.08804247959139425,
+          "snr": 1.7296211942214692,
+          "wavelength_um": 0.754375878438176,
+          "bandwidth_um": 0.017547834884863733,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60790.262462801,
+          "detector": "D1",
+          "source": "spherex_spherex_qr2_early_D1_2025W17_2025W17_4B_0077_3_D1_cutout15arcmin.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60794.063320475,
+          "detector": "D6",
+          "source": "spherex_spherex_qr2_early_D6_2025W18_2025W18_1B_0081_1_D6_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.1159488437882337,
+          "flux_err_mjy": 0.07078228504466802,
+          "snr": -1.6381054061063833,
+          "wavelength_um": 1.6427954303352066,
+          "bandwidth_um": 0.039334649084761066,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 60794.06481272,
+          "detector": "D3",
+          "source": "spherex_spherex_qr2_early_D3_2025W18_2025W18_1B_0081_2_D3_cutout15arcmin.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61160.588051597,
+          "detector": "D2",
+          "source": "spherex_spherex_qr2_D2_2026W18_2026W18_2A_0023_1_D2_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.02832752376544061,
+          "flux_err_mjy": 0.1268869227581215,
+          "snr": 0.2232501439052157,
+          "wavelength_um": 4.309609258876128,
+          "bandwidth_um": 0.03743868417356139,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61160.588051597,
+          "detector": "D5",
+          "source": "spherex_spherex_qr2_D5_2026W18_2026W18_2A_0023_1_D5_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.0948571832305875,
+          "flux_err_mjy": 0.11263596601955053,
+          "snr": -0.8421571420102428,
+          "wavelength_um": 1.063344496142539,
+          "bandwidth_um": 0.028631384475661534,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61163.717647176,
+          "detector": "D1",
+          "source": "spherex_spherex_qr2_D1_2026W18_2026W18_2A_0819_1_D1_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.022229054930664,
+          "flux_err_mjy": 0.04415363183017652,
+          "snr": -0.5034479386919128,
+          "wavelength_um": 3.630211034943076,
+          "bandwidth_um": 0.09981453666353926,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61163.717647176,
+          "detector": "D4",
+          "source": "spherex_spherex_qr2_D4_2026W18_2026W18_2A_0819_1_D4_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": 0.3481432337461644,
+          "flux_err_mjy": 0.18552508228489092,
+          "snr": 1.8765291973381706,
+          "wavelength_um": 4.684492343654047,
+          "bandwidth_um": 0.037419001405757574,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61164.116949734,
+          "detector": "D6",
+          "source": "spherex_spherex_qr2_D6_2026W19_2026W19_1A_0041_1_D6_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.15177325191935864,
+          "flux_err_mjy": 0.06102112148369295,
+          "snr": -2.4872248858932875,
+          "wavelength_um": 1.9737116359919558,
+          "bandwidth_um": 0.04870427061521054,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61164.116949745,
+          "detector": "D3",
+          "source": "spherex_spherex_qr2_D3_2026W19_2026W19_1A_0041_1_D3_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.05602579862432311,
+          "flux_err_mjy": 0.058318639894524626,
+          "snr": -0.960684246505948,
+          "wavelength_um": 1.9391596483676994,
+          "bandwidth_um": 0.04729940162060109,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61311.336624051,
+          "detector": "D3",
+          "source": "spherex_spherex_qr3_D3_2026W40_2026W40_1A_0070_2_D3_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.05762848823358677,
+          "flux_err_mjy": 0.1839960979083208,
+          "snr": -0.3132049477609093,
+          "wavelength_um": 4.664975236281949,
+          "bandwidth_um": 0.03639054675623188,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61311.336624062,
+          "detector": "D6",
+          "source": "spherex_spherex_qr3_D6_2026W40_2026W40_1A_0070_2_D6_cutout15arcmin.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61315.478075579,
+          "detector": "D2",
+          "source": "spherex_spherex_qr3_D2_2026W40_2026W40_2A_0216_2_D2_cutout15arcmin.fits"
+        },
+        {
+          "status": "low_snr",
+          "flux_mjy": -0.08210912388241226,
+          "flux_err_mjy": 0.11082731993403,
+          "snr": -0.7408743974977265,
+          "wavelength_um": 4.12734508312743,
+          "bandwidth_um": 0.03674319878246338,
+          "aperture_radius_px": 2,
+          "note": "Native aperture flux; no PSF aperture correction; uncertainties exclude calibration systematics.",
+          "mjd": 61315.478075579,
+          "detector": "D5",
+          "source": "spherex_spherex_qr3_D5_2026W40_2026W40_2A_0216_2_D5_cutout15arcmin.fits"
+        }
+      ]
+    },
+    {
+      "target": "RW Aur",
+      "detector": "D3",
+      "usable_exposures": 8,
+      "visits": 3,
+      "input_errors": [],
+      "modes": {
+        "visit_blink": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "longest_baseline": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "difference_sequence": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "motion_tracked": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        },
+        "spectral_color": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "false_colour": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "wavelength_matched": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "No cross-visit exposures with matching wavelength coverage at this target"
+        },
+        "within_visit_fast": {
+          "status": "success",
+          "frames": 3,
+          "reason": null
+        },
+        "spectral_preview": {
+          "status": "success",
+          "frames": 3,
+          "reason": null
+        },
+        "shift_stack": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "Visits have no common wavelength coverage. Try individual exposures or another detector."
+        }
+      },
+      "photometry": [
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60936.600294988,
+          "detector": "D6",
+          "source": "spherex_qr2_cutout_02_level2_2025W38_2C_0023_2D6_spx_l2b-v20-2025-269.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60936.601787245,
+          "detector": "D6",
+          "source": "spherex_qr2_cutout_01_level2_2025W38_2C_0023_3D6_spx_l2b-v20-2025-269.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60936.603279502,
+          "detector": "D3",
+          "source": "spherex_qr2_cutout_03_level2_2025W38_2C_0023_4D3_spx_l2b-v20-2025-269.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 60938.23056559,
+          "detector": "D3",
+          "source": "spherex_qr2_cutout_06_level2_2025W38_2C_0342_1D3_spx_l2b-v20-2025-269.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61103.332591065,
+          "detector": "D4",
+          "source": "spherex_qr2_cutout_04_level2_2026W10_1A_0445_3D4_spx_l2b-v24-2026-094.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61103.33408331,
+          "detector": "D4",
+          "source": "spherex_qr2_cutout_05_level2_2026W10_1A_0445_4D4_spx_l2b-v24-2026-094.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61299.283574826,
+          "detector": "D6",
+          "source": "spherex_qr3_cutout_01_level2_2026W38_1A_0435_1D6_spx_l2b-v27-2026-261.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61299.285067083,
+          "detector": "D3",
+          "source": "spherex_qr3_cutout_02_level2_2026W38_1A_0435_2D3_spx_l2b-v27-2026-261.fits"
+        }
+      ]
+    },
+    {
+      "target": "R Dra",
+      "detector": "D4",
+      "usable_exposures": 3,
+      "visits": 2,
+      "input_errors": [],
+      "modes": {
+        "visit_blink": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "longest_baseline": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "At least two observed visits are required."
+        },
+        "difference_sequence": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "At least two observed visits are required."
+        },
+        "motion_tracked": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "spectral_color": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "false_colour": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "False colour requires D1, D3 and D6 in the same visit."
+        },
+        "wavelength_matched": {
+          "status": "unavailable",
+          "frames": 0,
+          "reason": "No cross-visit exposures with matching wavelength coverage at this target"
+        },
+        "within_visit_fast": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "spectral_preview": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        },
+        "shift_stack": {
+          "status": "success",
+          "frames": 1,
+          "reason": null
+        }
+      },
+      "photometry": [
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61039.155047674,
+          "detector": "D3",
+          "source": "spherex_qr2_cutout_2026W01_1A_0257_3D3_15arcmin.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61039.155047674,
+          "detector": "D6",
+          "source": "spherex_qr2_cutout_2026W01_1A_0257_3D6_15arcmin.fits"
+        },
+        {
+          "status": "masked_or_outside",
+          "flux_mjy": null,
+          "flux_err_mjy": null,
+          "mjd": 61251.586453009,
+          "detector": "D4",
+          "source": "spherex_qr3_cutout_2026W31_2A_0014_4D4_15arcmin.fits"
+        }
+      ]
+    }
+  ]
+}

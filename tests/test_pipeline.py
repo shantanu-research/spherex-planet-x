@@ -92,7 +92,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertEqual(len(grid), 102)
         
         target = BENCHMARK_TARGETS["WISE 0855-0714"]
-        spec = extract_102_channel_spectrum(target)
+        spec = extract_102_channel_spectrum(target, source_mode="simulated")
         self.assertEqual(spec["total_channels"], 102)
         self.assertTrue(any("CH4" in f for f in spec["detected_molecular_features"]))
 
@@ -144,7 +144,7 @@ class TestSpherexPipeline(unittest.TestCase):
         """Verify decoupled backend.pipeline.execute_pipeline and generate_gif_export directly."""
         from backend.pipeline import execute_pipeline, generate_gif_export
 
-        res = execute_pipeline(target_key="WISE 0855-0714", detector="D6", mode="visit_blink")
+        res = execute_pipeline(target_key="WISE 0855-0714", detector="D6", mode="visit_blink", source_mode="simulated")
         self.assertEqual(res["status"], "success")
         self.assertEqual(len(res["frames"]), 4)
         self.assertIn("manifest", res)
@@ -153,7 +153,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertIn("spectrophotometry", res)
 
         # Test direct GIF export generation
-        gif_bytes = generate_gif_export(target_key="WISE 0855-0714", detector="D6", mode="visit_blink", fps=4)
+        gif_bytes = generate_gif_export(target_key="WISE 0855-0714", detector="D6", mode="visit_blink", fps=4, source_mode="simulated")
         self.assertTrue(gif_bytes.startswith(b"GIF89a"))
         self.assertTrue(gif_bytes.endswith(b"\x3B"))
 
@@ -163,28 +163,28 @@ class TestSpherexPipeline(unittest.TestCase):
         handler_dummy = SpherexApiHandler.__new__(SpherexApiHandler)
         
         # Test Mode 1: visit_blink
-        res1 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="visit_blink")
+        res1 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="visit_blink", source_mode="simulated")
         self.assertEqual(res1["status"], "success")
         self.assertEqual(len(res1["frames"]), 4)
         
         # Test Mode 2: longest_baseline (2 frames)
-        res2 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="longest_baseline")
+        res2 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="longest_baseline", source_mode="simulated")
         self.assertEqual(len(res2["frames"]), 2)
         
         # Test Mode 3: difference_sequence
-        res3 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="difference_sequence")
+        res3 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="difference_sequence", source_mode="simulated")
         self.assertEqual(len(res3["frames"]), 4)
         
         # Test Mode 4: motion_tracked
-        res4 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="motion_tracked")
+        res4 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="motion_tracked", source_mode="simulated")
         self.assertEqual(res4["frame_mode"], "comoving")
         
         # Test Mode 5: spectral_color (multiband)
-        res5 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="spectral_color")
+        res5 = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="spectral_color", source_mode="simulated")
         self.assertEqual(res5["color_mode"], "multiband")
         
         # Test shift_stack (verifies SPHEREx_PIXEL_SCALE_ARCSEC bug is resolved)
-        res_shift = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="shift_stack")
+        res_shift = handler_dummy.execute_pipeline_v2("WISE 0855-0714", "D6", mode="shift_stack", source_mode="simulated")
         self.assertEqual(res_shift["status"], "success")
         self.assertEqual(len(res_shift["frames"]), 4)
 
