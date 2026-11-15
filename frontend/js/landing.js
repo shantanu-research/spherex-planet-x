@@ -21,7 +21,6 @@ if ('IntersectionObserver' in window) {
   let ended = false;
   function end() {
     if (ended) return; ended = true;
-    try { sessionStorage.setItem('odIntro', '1'); } catch (e) {}
     root.classList.remove('intro-on');
     if (el) el.remove();
   }
