@@ -1,6 +1,6 @@
 # SPHEREx "Planet X" Discovery Engine & Multi-Epoch Visualizer
 
-> **Development status:** This project is not yet scientifically validated or submission-ready. The main viewer does not yet fetch and process live IRSA cutouts end to end. Real-data rendering currently requires local FITS archives; simulated data must be selected explicitly. Several scientific performance claims and feature descriptions below are design goals that still require independent verification. MP4 export is not implemented.
+> **Development status:** This project is not yet scientifically validated or submission-ready. The main viewer does not yet fetch and process live IRSA cutouts end to end. Real-data rendering currently requires local FITS archives; simulated data must be selected explicitly. Several scientific performance claims and feature descriptions below are design goals that still require independent verification. GIF and MP4 exports are available; MP4 requires ffmpeg.
 
 **NASA Space Apps Challenge 2026 — Planet X and SPHEREx**
 
@@ -155,3 +155,15 @@ spherex-planet-x/
 ├── run_server.ps1                       # 1-click startup script
 └── ARCHITECTURE.md                     # Full mathematical specification
 ```
+
+## Portable deployment
+
+Run `python -m pip install -r backend/requirements.txt`, then `python -m backend.server`.
+The server uses `PORT` (default 8080). For a container including ffmpeg, run
+`docker build -t spherex .` followed by `docker run --rm -p 8080:8080 spherex`.
+A Render blueprint is supplied in `render.yaml`; deployment has not been performed.
+Local FITS archives are excluded from the image and need a mounted data directory.
+
+Run the deterministic checks with
+`python -m pytest backend/tests/test_offline.py tests/test_truthful_sources.py tests/test_media.py`
+and `node tests/test_frontend.cjs`. These checks do not constitute scientific validation.

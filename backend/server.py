@@ -308,9 +308,6 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
         # Endpoint 9: Export Animated GIF & MP4 (Section 9.2)
         # -------------------------------------------------------------
         if path in ("/api/export/gif", "/api/export.gif", "/api/export/mp4", "/api/export.mp4"):
-            if path.endswith("mp4"):
-                self._send_json({"status": "unavailable", "message": "MP4 export is not implemented; GIF export is available."}, status=501)
-                return
             target_key = query.get("q", query.get("target", ["WISE 0855-0714"]))[0]
             detector = query.get("det", query.get("detector", ["D6"]))[0].upper()
             mode = query.get("mode", ["visit_blink"])[0].lower()
@@ -330,7 +327,11 @@ class SpherexApiHandler(SimpleHTTPRequestHandler):
             )
             fov_suffix = f"_{fov_mode}" if fov_mode else ""
             filename = f"spherex_{target_key.replace(' ', '_').lower()}_{detector}_{mode}{fov_suffix}.gif"
-            self._send_binary(gif_bytes, "image/gif", filename)
+            if path.endswith("mp4"):
+                from backend.media import gif_to_mp4
+                self._send_binary(gif_to_mp4(gif_bytes), "video/mp4", filename[:-4] + ".mp4")
+            else:
+                self._send_binary(gif_bytes, "image/gif", filename)
             return
 
         # Fallback to static file server (frontend HTML, CSS, JS)
@@ -364,5 +365,5 @@ def run_server(port: int = 8080):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8080"))
     run_server(port)

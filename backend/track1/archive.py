@@ -109,10 +109,19 @@ def deduplicate(exps: list[Exposure]) -> list[Exposure]:
 
 
 def _run_tap(query: str):
-    from astroquery.ipac.irsa import Irsa  # imported lazily so tests run offline
-    table = Irsa.query_tap(query).to_table()
+    import io
+    import httpx
+    from astropy.table import Table
+    response = httpx.get(
+        IRSA_BASE + "TAP/sync",
+        params={"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "votable", "QUERY": query},
+        timeout=45.0, follow_redirects=True,
+    )
+    response.raise_for_status()
+    table = Table.read(io.BytesIO(response.content), format="votable")
     return [tuple(r) for r in table.iterrows(
         "uri", "time_bounds_lower", "time_bounds_upper", "energy_bandpassname")]
+
 
 
 def search(ra: float, dec: float, size_deg: float = 0.083, detector: str | None = None,
