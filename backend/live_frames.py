@@ -15,7 +15,12 @@ def aligned_image(path, output_wcs, shape):
             data -= hdus['ZODI'].data
         valid = np.isfinite(data)
         if 'FLAGS' in hdus:
-            valid &= hdus['FLAGS'].data == 0
+            flag_hdu = hdus['FLAGS']
+            # Source and full-sample flags are informational, not rejected pixels.
+            bits = [int(v) for k, v in flag_hdu.header.items()
+                    if k.startswith('MP_') and k not in ('MP_SOURCE', 'MP_FULLSAMPLE')]
+            reject = sum(1 << bit for bit in set(bits)) if bits else -1
+            valid &= (flag_hdu.data & reject) == 0
         yy, xx = np.indices(shape)
         ra, dec = output_wcs.pixel_to_world_values(xx, yy)
         sx, sy = WCS(hdu.header).celestial.world_to_pixel_values(ra, dec)
@@ -27,7 +32,7 @@ def aligned_image(path, output_wcs, shape):
 
 
 def render_live(target, detector, fov, mode):
-    if mode not in ('within_visit_fast', 'spectral_preview'):
+    if mode not in ('within_visit_fast', 'spectral_preview', 'wavelength_matched', 'longest_baseline'):
         return {'status': 'unavailable', 'frames': [], 'message': 'Live archive preview supports individual exposures. Temporal comparisons require verified matching wavelength coverage.'}
     ra, dec = target['ra_deg'], target['dec_deg']
     records = visits.select_frames(visits.group_visits(archive.search(ra, dec, fov / 60, detector)), limit=24)
@@ -39,7 +44,7 @@ def render_live(target, detector, fov, mode):
     wcs.wcs.crpix = [(n + 1) / 2] * 2
     scale = fov / 60 / n
     wcs.wcs.cdelt = [-scale, scale]
-    images, metadata, failures = [], [], []
+    images, metadata, failures, spectra = [], [], [], []
     for record, download in zip(records, results):
         if download['error']:
             failures.append(download['error'])
@@ -48,12 +53,21 @@ def render_live(target, detector, fov, mode):
             pixels, date, unit = aligned_image(cutouts.CUTOUT_DIR / download['file'], wcs, (n, n))
             if not np.isfinite(pixels).any():
                 continue
+            from backend.spectral_matching import wavelength_grid
+            try:
+                spectrum = wavelength_grid(cutouts.CUTOUT_DIR / download['file'], wcs, (n, n))
+            except (ValueError, KeyError):
+                spectrum = None
+            spectra.append(spectrum)
             images.append(pixels)
             metadata.append((record, date, unit))
         except (ValueError, KeyError, OSError) as exc:
             failures.append(str(exc))
     if not images:
         return {'status': 'unavailable', 'frames': [], 'message': 'No usable archive cutouts', 'errors': failures}
+    if mode in ('wavelength_matched', 'longest_baseline'):
+        from backend.spectral_matching import matched_baseline
+        images, metadata, spectra = matched_baseline(images, metadata, spectra)
     finite = np.concatenate([im[np.isfinite(im)] for im in images])
     low, high = np.percentile(finite, [1, 99.5])
     frames = []
@@ -63,7 +77,7 @@ def render_live(target, detector, fov, mode):
         frames.append({'frame_id': str(i), 'visit_id': str(record.visit), 'date_utc': date,
                        'mjd': record.t_start_mjd, 'band': detector, 'label': date,
                        'is_real_data': True, 'source_file': record.image_url,
-                       'target_pos_px': [n / 2, n / 2], 'wavelength_um': None,
+                       'target_pos_px': [n / 2, n / 2], 'wavelength_um': float(spectra[i][0][n // 2, n // 2]) if spectra[i] is not None else None,
                        'rgb_pixels': np.repeat(grey[:, :, None], 3, axis=2).tolist()})
     return {'status': 'success', 'target': target, 'detector': detector, 'mode': mode,
             'grid_size': n, 'is_real_data': True, 'frames': frames, 'field_stars': [],
