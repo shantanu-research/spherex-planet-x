@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPHEREx Sky Flipbook</title>
+  <meta name="description" content="Team Overdrive's NASA Space Apps Challenge 2026 project: a multi-epoch viewer for SPHEREx infrared sky images.">
+  <link rel="icon" type="image/svg+xml" href="assets/mission-patch.svg">
+  <link rel="stylesheet" href="css/style.css?v=20261115v">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@700;900&family=Fira+Code:wght@400;500;700&family=Overpass:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<a class="skip-link" href="#workbenchHeading">Skip to image workbench</a>
+
+  <!-- Portal utility bar -->
+  <div class="portal-bar" role="note">
+    <span><strong>NASA Space Apps Challenge 2026 project</strong> · Team Overdrive · Planet X and SPHEREx challenge. This website is not operated by NASA, JPL, Caltech or IPAC.</span>
+    <nav aria-label="External resources" class="portal-links">
+      <a href="https://irsa.ipac.caltech.edu/Missions/spherex.html" rel="noopener">SPHEREx data at IRSA</a>
+      <a href="https://github.com/shantanu-research/spherex-planet-x" rel="noopener">Source code</a>
+      <a href="#mission">Mission patches</a>
+      <a href="/">About this project</a>
+    </nav>
+  </div>
+
+  <!-- Top Master Mission HUD Header -->
+  <header class="hud-header">
+    <div class="brand-section">
+      <img class="header-patch" src="assets/mission-patch.svg" width="64" height="64" alt="">
+      <div>
+        <h1 class="mission-title">SPHEREx Sky Flipbook</h1>
+        <div class="mission-subtitle">Planet X and SPHEREx challenge · Multi-epoch infrared sky viewer</div>
+      </div>
+    </div>
+
+    <!-- Benchmark Target Presets -->
+    <div class="benchmark-presets">
+      <button class="preset-btn active" data-target="WISE 0855-0714" title="Y2 Dwarf (250 K), -8.16 arcsec/yr PM, peak in D6">
+        <span class="preset-dot"></span>WISE 0855 (Y2 Dwarf)
+      </button>
+      <button class="preset-btn" data-target="Barnard's Star" title="Fastest proper motion star in the sky (10.39 arcsec/yr)">
+        <span class="preset-dot"></span>Barnard's Star (10.4"/yr)
+      </button>
+      <button class="preset-btn" data-target="Epsilon Indi Ba/Bb" title="Binary Brown Dwarf (T1+T6) 400 arcsec south of Eps Ind A">
+        <span class="preset-dot"></span>Eps Indi Ba/Bb (T-Dwarf)
+      </button>
+      <button class="preset-btn" data-target="Planet X Candidate (Sedna-Type TNO)" title="Hypothetical 450 AU planet in distant orbit">
+        <span class="preset-dot"></span>Planet X (TNO 450 AU)
+      </button>
+      <button class="preset-btn" data-target="RW Aurigae" title="Classical T Tauri binary with circumstellar dust dimming">
+        <span class="preset-dot"></span>RW Aurigae (YSO)
+      </button>
+      <button class="preset-btn" data-target="R Draconis" title="Mira-type pulsating variable near North Ecliptic Pole">
+        <span class="preset-dot"></span>R Draconis (Mira)
+      </button>
+    </div>
+
+    <!-- System Status & Shortcuts Trigger -->
+    <div class="header-actions">
+      <a class="spaceapps-lockup" href="https://www.spaceappschallenge.org/" rel="noopener" aria-label="NASA Space Apps Challenge website">
+        <span class="lockup-label">Built for</span>
+        <img src="assets/spaceapps-logo-2026-white.png" width="176" height="74" alt="NASA Space Apps Challenge">
+      </a>
+      <div class="archive-pill" title="Dynamic Pipeline R7 Discovery">
+        <span class="status-indicator-dot"></span>
+        <span id="systemStatusText" role="status">Ready</span>
+      </div>
+      <button id="shortcutsBtn" class="help-btn" title="View keyboard shortcuts (or press ?)">Keyboard shortcuts</button>
+    </div>
+  </header>
+
+  <!-- Stale Catalog Epoch Alert Banner -->
+  <div id="staleEpochBanner" class="stale-epoch-banner" style="display: none;">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span id="staleEpochText">STALE CATALOG DISCOVERY EPOCH DETECTED</span>
+    <span class="epoch-note">Propagated to SPHEREx epoch 2025.8</span>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast-notification" style="display: none;">URL Copied to Clipboard!</div>
+
+  <!-- Main Dual-Column Dashboard Grid -->
+  <main class="dashboard-grid">
+    <form id="targetForm" class="target-form">
+      <h2 id="workbenchHeading" tabindex="-1">Explore a sky field</h2>
+      <label for="targetQuery">Object name or RA, Dec</label>
+      <input id="targetQuery" name="q" required maxlength="160" placeholder="Barnard’s Star or 269.45, 4.69" aria-describedby="targetHint">
+      <p id="targetHint">Decimal degrees or hh:mm:ss ±dd:mm:ss. Unknown object names use the CDS resolver.</p>
+      <label for="fieldSize">Field of view (arcminutes)</label>
+      <input id="fieldSize" name="fov" type="number" min="1" max="15" step="0.5" value="6.5" required>
+      <button type="submit" class="export-btn">Load field</button>
+      <progress id="loadingProgress" aria-label="Loading observations" hidden></progress>
+      <p id="scienceNotes" role="status"></p>
+    </form>
+    <section id="pipelineStrip" class="pipeline-strip" aria-labelledby="pipelineHeading">
+      <h2 id="pipelineHeading">Pipeline: how this view was made</h2>
+      <ol class="pipe-list">
+        <li><button type="button" class="pipe-card" data-tab="tabObservations" id="pipeT1"><span class="pipe-track">Track 1 · Data</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="tabAudit" id="pipeT2"><span class="pipe-track">Track 2 · Calibration</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="tabSpectra" id="pipeT3"><span class="pipe-track">Track 3 · Spectra &amp; astrometry</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+        <li><button type="button" class="pipe-card" data-tab="" id="pipeT4"><span class="pipe-track">Track 4 · Viewer</span><span class="pipe-state" data-state="idle">Waiting</span><span class="pipe-detail">Select a field.</span></button></li>
+      </ol>
+      <p class="pipe-hint">Each card shows what that stage produced for the current field. Select a card to open its measurements. Unavailable stages are shown as such, never filled in.</p>
+    </section>
+
+
+    <!-- LEFT COLUMN: Canvas Flipbook & Processing Controls -->
+    <section class="panel">
+
+      <!-- Viewer Header with Overlay Toggles -->
+      <div class="panel-header">
+        <span class="panel-title">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="12 8 8 12 12 16 16 12 12 8"/>
+          </svg>
+          Image comparison
+        </span>
+        <div class="overlay-controls">
+          <!-- Overlay Toggles -->
+          <button id="toggleReticleBtn" class="toggle-pill active" title="Toggle Target Reticle Crosshairs">Reticle</button>
+          <button id="toggleCompassBtn" class="toggle-pill active" title="Toggle WCS North/East Compass & Scale Bar">WCS</button>
+          <button id="toggleStarsBtn" class="toggle-pill" title="Toggle Gaia DR3 Reference Star Markers">Gaia</button>
+          <button id="toggleTrailBtn" class="toggle-pill active" title="Toggle Proper Motion Trajectory Trail">Trail</button>
+          <button id="toggleWipeBtn" class="toggle-pill" title="Toggle Split-Wipe Divider (Side-by-Side Dual-Epoch Comparison)">Wipe</button>
+          <span id="hudDetector" class="hud-pill">D1 (0.75 - 1.1 um)</span>
+        </div>
+      </div>
+
+      <!-- Interactive Data Source & FOV Toolbar -->
+      <div class="source-fov-bar">
+        <div class="btn-group-segmented">
+          <span class="group-label">FOV:</span>
+          <button id="fovWideBtn" class="seg-btn active" data-fov="wide" title="Wide-field 15-arcminute field of view (Zoomed-Out)">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            15′ wide
+          </button>
+          <button id="fovCoreBtn" class="seg-btn" data-fov="core" title="High-magnification 6.5-arcminute core stamp centered on target (Zoomed-In)">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+            6.5′ core
+          </button>
+        </div>
+
+        <div class="btn-group-segmented">
+          <span class="group-label">Source:</span>
+          <button id="sourceRealBtn" class="seg-btn active" data-source="real" title="Exact calibrated science FITS images from NASA / IPAC archives">
+            <span class="pulse-indicator"></span>
+            Archive FITS
+          </button>
+          <button id="sourceSimBtn" class="seg-btn" data-source="simulated" title="Synthetic multi-epoch simulation benchmark">
+            Simulation
+          </button>
+        </div>
+
+
+      </div>
+
+      <!-- Double-Buffered Canvas Viewport with Zoom Toolbar -->
+      <div class="canvas-container">
+        <!-- Floating Zoom Controls -->
+        <div class="canvas-zoom-toolbar">
+          <button id="zoomInBtn" class="zoom-btn" title="Zoom in (+)">+</button>
+          <button id="zoomOutBtn" class="zoom-btn" title="Zoom out (-)">−</button>
+          <button id="zoomResetBtn" class="zoom-btn" title="Reset view (1:1)">1:1</button>
+        </div>
+
+        <canvas id="flipbookCanvas" width="480" height="480" aria-label="Astronomical image comparison"></canvas>
+        <div id="viewerMessage" class="viewer-message" role="status"><strong>Loading observations</strong><span>Preparing the selected field and detector.</span></div>
+
+        <!-- Live HUD telemetry overlay -->
+        <div class="canvas-hud-overlay">
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
+            <span id="hudSourceBadge" class="hud-pill hud-pill-source">REAL FITS</span>
+            <span id="hudVisit" class="hud-pill">SPHEREx-D1</span>
+            <span id="hudDate" class="hud-pill">2025-09-27</span>
+            <span id="hudMjd" class="hud-pill">MJD 60945.3</span>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <span id="hudFovBadge" class="hud-pill">6.5' WIDE FIELD</span>
+            <span id="hudFile" class="hud-pill hud-pill-file" title="FITS Source Filename">spherex_SPHEREx-D1_level2...fits</span>
+          </div>
+        </div>
+
+        <!-- Live Cursor Coordinate Inspector -->
+        <div id="canvasCoordReadout" class="canvas-coord-readout">FOV 6.5' | 6.15"/px</div>
+      </div>
+
+      <!-- Playback Controls Bar -->
+      <div class="playback-toolbar">
+        <button id="playPauseBtn" class="icon-btn" title="Play / Pause Flipbook (Space)">
+          <svg aria-hidden="true" id="playPauseIcon" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16"/>
+            <rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        </button>
+        <button id="prevFrameBtn" class="icon-btn" title="Previous Frame (Left Arrow)">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <button id="nextFrameBtn" class="icon-btn" title="Next Frame (Right Arrow)">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+
+        <label class="range-control" for="fpsSlider">
+          <span>Speed</span>
+          <input type="range" id="fpsSlider" min="1" max="15" value="4" aria-describedby="fpsValue">
+          <output id="fpsValue" for="fpsSlider">4 FPS</output>
+        </label>
+        <label class="range-control" for="wipeRange" id="wipeControl" hidden>
+          <span>Wipe</span>
+          <input type="range" id="wipeRange" min="5" max="95" value="50" aria-describedby="wipeValue">
+          <output id="wipeValue" for="wipeRange">50%</output>
+        </label>
+
+        <!-- Dynamic Visit Scrubber Buttons -->
+        <div id="visitScrubberContainer" class="visit-scrubber-group"></div>
+      </div>
+
+      <!-- Science Controls Body -->
+      <div class="controls-body">
+
+        <!-- SECTION 9.1: The 7 Unified Viewing Modes -->
+        <div>
+          <div class="control-group-title">
+            <span>Comparison mode</span>
+
+          </div>
+          <div class="modes-grid">
+            <button class="mode-card active" data-mode="visit_blink" title="Mode 1: Band-balanced co-adds across survey visits v=1..M with global Asinh stretch">
+              <span class="mode-num">1</span>
+              <span class="mode-name">Visit Blink</span>
+              <span class="mode-tag">Band-Balanced</span>
+            </button>
+            <button class="mode-card" data-mode="longest_baseline" title="Mode 2: Earliest & latest co-adds (earliest vs latest available) to reveal sub-pixel motion">
+              <span class="mode-num">2</span>
+              <span class="mode-name">Longest Baseline</span>
+              <span class="mode-tag">Max Drift</span>
+            </button>
+            <button class="mode-card" data-mode="difference_sequence" title="Mode 3: Template-subtracted difference frames D = F - T with symmetric diverging stretch (movers appear as dipoles)">
+              <span class="mode-num">3</span>
+              <span class="mode-name">Difference Dipoles</span>
+              <span class="mode-tag">Diff Imaging</span>
+            </button>
+            <button class="mode-card" data-mode="motion_tracked" title="Mode 4: Co-moving reference frame pinning moving target at grid center while field stars drift">
+              <span class="mode-num">4</span>
+              <span class="mode-name">Motion Tracked</span>
+              <span class="mode-tag">Idea 1 Co-Moving</span>
+            </button>
+            <button class="mode-card" data-mode="spectral_color" title="Mode 5: Multi-band D1/D3/D6 or RGB-over-IR superposition mapping infrared to visible spectrum">
+              <span class="mode-num">5</span>
+              <span class="mode-name">Spectral Color</span>
+              <span class="mode-tag">Idea 2 Superposition</span>
+            </button>
+            <button class="mode-card" data-mode="wavelength_matched" title="Mode 6: Cross-visit pairs matching target wavelength with monochromatic LVF hue tinting">
+              <span class="mode-num">6</span>
+              <span class="mode-name">Wavelength Match</span>
+              <span class="mode-tag">LVF Tinted</span>
+            </button>
+            <button class="mode-card" data-mode="within_visit_fast" title="Mode 7: Individual exposures in chronological order; wavelengths vary">
+              <span class="mode-num">7</span>
+              <span class="mode-name">Individual Exposures</span>
+              <span class="mode-tag">Asteroid Search</span>
+            </button>
+            <button class="mode-card" data-mode="shift_stack" title="Shift-and-stack orbital tracker aligned on target velocity vector">
+              <span class="mode-num">8</span>
+              <span class="mode-name">Shift-and-Stack</span>
+              <span class="mode-tag">&radic;N Boost</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Granular Controls Accordion -->
+        <details class="controls-accordion">
+          <summary class="control-group-title" style="cursor: pointer; user-select: none;">
+            <span>Detector, reference frame &amp; color</span>
+          </summary>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+
+            <!-- SPHEREx Detector Array (D1..D6) -->
+            <div>
+              <div class="parameter-label">
+                <span>Detector</span>
+                <span id="activeDetBandInfo" style="color: var(--accent-cyan);">D6 &bull; 4.41 - 5.00 um (R=128)</span>
+              </div>
+              <div class="detector-selector">
+                <button class="det-btn" data-det="D1" title="D1: 0.744 - 1.116 um (Optical/TiO, R=39)">D1</button>
+                <button class="det-btn" data-det="D2" title="D2: 1.099 - 1.651 um (H2O 1.4um, R=41)">D2</button>
+                <button class="det-btn" data-det="D3" title="D3: 1.636 - 2.421 um (CH4 2.2um, R=41)">D3</button>
+                <button class="det-btn" data-det="D4" title="D4: 2.423 - 3.822 um (H2O Ice 3.0um, R=35)">D4</button>
+                <button class="det-btn" data-det="D5" title="D5: 3.809 - 4.420 um (CO2 4.27um, R=112)">D5</button>
+                <button class="det-btn active" data-det="D6" title="D6: 4.412 - 5.002 um (CO 4.6um / Y-Dwarf Thermal, R=128)">D6</button>
+              </div>
+            </div>
+
+            <!-- Idea 1: Reference Frame -->
+            <div>
+              <div class="parameter-label">Reference frame</div>
+              <div class="segmented-control">
+                <button class="seg-btn frame-mode-btn active" data-frame="inertial">Inertial Sky-Fixed</button>
+                <button class="seg-btn frame-mode-btn" data-frame="comoving">Co-Moving Target-Locked</button>
+              </div>
+            </div>
+
+            <!-- Idea 2: Color Palette Mapping -->
+            <div>
+              <div class="parameter-label">Color mapping</div>
+              <div class="segmented-control">
+                <button class="seg-btn color-mode-btn active" data-color="spectral">IR-to-Vis Superposition</button>
+                <button class="seg-btn color-mode-btn" data-color="multiband">Multi-Band RGB (D1/D3/D6)</button>
+                <button class="seg-btn color-mode-btn" data-color="grayscale">Detector-Locked Asinh</button>
+              </div>
+            </div>
+
+          </div>
+        </details>
+
+      </div>
+
+      <!-- Export Action Toolbar with SVG Icons -->
+      <div class="export-bar">
+<button id="exportMp4Btn" class="export-btn">Export MP4</button>
+<button id="embedBtn" class="export-btn">Copy embed code</button>
+<button id="flagBtn" class="export-btn" title="Save position, frame and a note as a local JSON file for later reporting">Flag something interesting</button>
+<label><input type="checkbox" id="maskToggle"> Show masked pixels</label>
+<label><input type="checkbox" id="catalogToggle"> Gaia / CatWISE references</label><p id="catalogStatus" role="status"></p>
+        <button id="exportGifBtn" class="export-btn" title="Compile deterministic 256-color median-cut GIF with burned-in HUD">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+            <line x1="7" y1="2" x2="7" y2="22"/>
+            <line x1="17" y1="2" x2="17" y2="22"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <line x1="2" y1="7" x2="7" y2="7"/>
+            <line x1="2" y1="17" x2="7" y2="17"/>
+            <line x1="17" y1="17" x2="22" y2="17"/>
+            <line x1="17" y1="7" x2="22" y2="7"/>
+          </svg>
+          Export GIF
+        </button>
+        <button id="exportCsvBtn" class="export-btn" title="Export observed aperture flux density table to CSV">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          Export SED CSV
+        </button>
+        <button id="copyShareUrlBtn" class="export-btn" title="Copy exact URL state router parameters to clipboard">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Copy link
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- RIGHT COLUMN: Multi-Track Science Diagnostics -->
+    <section class="science-panel-container" aria-label="Measurements">
+      <h2 class="diagnostics-heading">Measurements</h2>
+
+      <!-- Navigation Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="tabAudit">Flicker audit</button>
+        <button class="tab-btn" data-tab="tabSpectra">Spectrum</button>
+        <button class="tab-btn" data-tab="tabAstrometry">Astrometry</button>
+        <button class="tab-btn" data-tab="tabObservations">Observations</button>
+      </div>
+
+      <!-- TAB 1: Still-Star Photometric Stability Audit -->
+      <div id="tabAudit" class="tab-content active">
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Raw Frames Flicker</div>
+            <div id="rawFlickerVal" class="metric-value">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Band-Balanced Scatter</div>
+            <div id="balancedFlickerVal" class="metric-value highlight-purple">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Flicker Suppression</div>
+            <div id="flickerSuppressionVal" class="metric-value">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Difference Null Test</div>
+            <div id="nullTestVal" class="metric-value" style="font-size: 13px;">Not measured</div>
+          </div>
+        </div>
+
+        <div id="auditChartContainer" class="chart-container"></div>
+
+        <div class="science-callout">
+          <strong>Wavelength balancing:</strong>
+          Each pixel uses only wavelength bins shared by the selected visits. Within each bin exposures receive inverse-variance weights, then bins receive equal weights. Real-data flicker suppression has not been independently validated; simulation values describe injected test scenes only.
+        </div>
+      </div>
+
+      <!-- TAB 2: 102-Channel Spectrophotometry & Molecular Fingerprints -->
+      <div id="tabSpectra" class="tab-content">
+<details><summary>Measurement data table</summary><div class="observation-table"><table id="spectrumTable"><caption>Measured aperture fluxes</caption><thead><tr><th scope="col">Wavelength (µm)</th><th scope="col">Flux (mJy)</th><th scope="col">Error (mJy)</th><th scope="col">Date (MJD)</th></tr></thead><tbody></tbody></table></div></details>
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Spectral Resolution</div>
+            <div class="metric-value highlight-purple">Observed Samples</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Wavelength Range</div>
+            <div class="metric-value">0.74 - 5.00 um</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Resolving Power R</div>
+            <div class="metric-value">35 - 128</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Key Molecular Bands</div>
+            <div class="metric-value" style="font-size: 14px;">H2O, CH4, CO2, CO</div>
+          </div>
+        </div>
+
+        <div id="spectrumChartContainer" class="chart-container"></div>
+
+        <div class="science-callout">
+          <strong>Physical infrared spectral diagnostics:</strong>
+          Real-data points are native-pixel aperture fluxes at observed wavelengths and dates, with statistical error bars. They are not a simultaneous spectrum. No aperture correction or molecular identification is applied. Simulation curves are illustrative.
+        </div>
+      </div>
+
+      <!-- TAB 3: Astrometric Validation & Proper Motion HUD -->
+      <div id="tabAstrometry" class="tab-content">
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Target Name</div>
+            <div id="astTargetName" class="metric-value highlight-purple" style="font-size: 14px;">WISE 0855-0714</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Spectral Type / Teff</div>
+            <div id="astSpectralType" class="metric-value" style="font-size: 14px;">Y2 (250 K)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Discovery Catalog Epoch</div>
+            <div id="astCatalogEpoch" class="metric-value" style="font-size: 14px;">J2010.5</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Catalog Coordinates</div>
+            <div id="astCatalogCoords" class="metric-value" style="font-size: 12px;">RA 133.7951°, Dec -7.2451°</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="metric-card">
+            <div class="metric-label">Fitted Proper Motion (SPHEREx)</div>
+            <div id="astFittedPm" class="metric-value highlight-purple" style="font-size: 15px;">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Gaia DR3 Astrometric Residual</div>
+            <div id="astGaiaResidual" class="metric-value" style="font-size: 15px;">Not measured</div>
+          </div>
+        </div>
+
+        <!-- Planet Nine / TNO Detectability & Sensitivity Metrics (Space Apps Community Research) -->
+        <div class="sensitivity-metrics">
+          <div class="metric-card">
+            <div class="metric-label">Single-Visit Depth</div>
+            <div id="p9SingleVisitDepth" class="metric-value">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Stack Depth Limit</div>
+            <div id="p9CoaddDepth" class="metric-value highlight-purple">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">ZODI Subtraction</div>
+            <div id="p9ZodiStatus" class="metric-value" style="font-size: 13px; color: var(--panther-purple-bright);">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Cosmic Ray Filter</div>
+            <div id="p9FlagsStatus" class="metric-value" style="font-size: 13px; color: #10b981;">Not measured</div>
+          </div>
+        </div>
+
+        <div class="science-callout">
+          <div style="font-weight: 700; margin-bottom: 6px; color: var(--text-pure);">Astrometric consistency &amp; Planet Nine sensitivity:</div>
+          <div id="astVerdict" style="color: var(--text-pure); margin-bottom: 8px;">
+            Independent catalogue validation has not been performed.
+          </div>
+          <div style="color: var(--text-muted); font-size: 11px;">
+            &bull; Sub-pixel phase registration locked to &lt;0.05 px precision.<br>
+            &bull; Space motion propagated to SPHEREx mid-mission epoch 2025.8 prior to archive querying.<br>
+            &bull; Planet Nine theoretical brightness is V &sim; 22.5 - 24.3 at 450 AU; detecting it requires coadding &sim;200+ visits with shift-and-stack synthetic tracking.<br>
+            &bull; Interplanetary zodiacal light model (ZODI plane) subtracted to prevent false epoch variability.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: Archive Observations & Footprint Coverage (Track 1) -->
+      <div id="tabObservations" class="tab-content">
+        <div class="metric-row">
+          <div class="metric-card">
+            <div class="metric-label">Archived Visits</div>
+            <div id="obsVisitsCount" class="metric-value highlight-purple">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Time Baseline</div>
+            <div class="metric-value">Not measured</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Release Provenance</div>
+            <div class="metric-value">See FITS manifest</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">IRSA Polygon Query</div>
+            <div class="metric-value" style="font-size: 12px;">CONTAINS(p.poly)</div>
+          </div>
+        </div>
+
+        <div class="observation-table">
+          <table aria-label="Observed visits" style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; text-align: left;">
+            <thead>
+              <tr style="background: var(--bg-secondary); color: var(--text-pure); border-bottom: 1px solid var(--border-subtle);">
+                <th scope="col" style="padding: 10px 12px;">Visit</th>
+                <th scope="col" style="padding: 10px 12px;">Detectors</th>
+                <th scope="col" style="padding: 10px 12px;">Epoch (UTC)</th>
+                <th scope="col" style="padding: 10px 12px;">MJD Mid</th>
+                <th scope="col" style="padding: 10px 12px;">Exposures</th>
+                <th scope="col" style="padding: 10px 12px;">Source</th>
+              </tr>
+            </thead>
+            <tbody id="obsTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="science-callout">
+          <strong>Track 1 orchestration integrity:</strong>
+          Observations clustered at 30-day temporal gaps (&Delta;t &gt; 30.0 d). IRSA TAP queries use exact polygon containment `CONTAINS(POINT, p.poly)` for archive discovery. Archive releases are deduplicated with precedence DR1 &gt; QR3 &gt; QR2.
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+  <section id="mission" class="insignia-band" aria-labelledby="insigniaHeading">
+    <h2 id="insigniaHeading">Mission patches</h2>
+    <div class="insignia-grid">
+      <figure class="insignia">
+        <div class="orbit-holder"><img src="assets/mission-patch.svg" width="220" height="220" alt="Team Overdrive mission patch: three flipbook frames with a star moving across them, a D1 to D6 spectrum band and the names Malhar, Akhilesh, Amrita and Shantanu."></div>
+        <figcaption>
+          <strong>SPHEREx Sky Flipbook</strong>
+          <span>Team Overdrive's patch, an original design. Three frames show one star at three epochs; the arrow is its proper motion; the band shows SPHEREx's six detectors from 0.75 to 5.0 µm.</span>
+          <a href="assets/mission-patch.svg" download>Download patch (SVG)</a>
+        </figcaption>
+      </figure>
+      <figure class="insignia">
+        <div class="orbit-holder orbit-holder--mission"><img src="assets/spherex-logo.png" width="220" height="220" alt="SPHEREx mission logo: the SPHEREx telescope inside a broken ring, above the word SPHEREx."></div>
+        <figcaption>
+          <strong>SPHEREx mission</strong>
+          <span>NASA's SPHEREx has mapped the whole sky every six months since May 2025 in 102 near-infrared colours. Logo courtesy NASA/JPL-Caltech; shown for identification only, with no endorsement implied.</span>
+          <a href="https://spherex.caltech.edu/" rel="noopener">SPHEREx mission site</a>
+        </figcaption>
+      </figure>
+      <figure class="insignia">
+        <div class="orbit-holder orbit-holder--event"><img src="assets/spaceapps-logo-2026-white.png" width="220" height="92" alt="NASA Space Apps Challenge logo"></div>
+        <figcaption>
+          <strong>NASA Space Apps Challenge 2026</strong>
+          <span>Challenge: Planet X and SPHEREx. Pune local event, 14–15 November 2026.</span>
+          <a href="https://www.spaceappschallenge.org/" rel="noopener">Space Apps Challenge</a>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer class="portal-footer">
+    <p><strong>Data:</strong> NASA SPHEREx Level-2 images via NASA/IPAC Infrared Science Archive (IRSA); Gaia DR3 (ESA); CatWISE2020; CDS Sesame. Software: Astropy, NumPy, SciPy, Pillow, FFmpeg.</p>
+    <p><strong>Credits:</strong> SPHEREx logo courtesy NASA/JPL-Caltech. NASA Space Apps Challenge logo used per the Space Apps brand guidelines. Mission patch © Team Overdrive.</p>
+    <p>Built by Team Overdrive for the NASA Space Apps Challenge 2026 (Planet X and SPHEREx challenge, Pune local event). This website is not operated or endorsed by NASA, JPL, Caltech or IPAC. Images and measurements are provided as-is for exploration; see the <a href="https://github.com/shantanu-research/spherex-planet-x#scientific-interpretation">scientific limits</a>.</p>
+  </footer>
+
+
+  <!-- Keyboard Shortcuts Modal -->
+  <dialog id="shortcutsModal" aria-labelledby="shortcutsTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="shortcutsTitle">Keyboard shortcuts</h2>
+        <button id="closeShortcutsBtn" class="close-btn" aria-label="Close keyboard shortcuts">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="shortcut-row"><span>Play / Pause Flipbook</span><span class="kbd">Space</span></div>
+        <div class="shortcut-row"><span>Previous / Next Frame</span><span class="kbd">&larr; / &rarr;</span></div>
+        <div class="shortcut-row"><span>Select Modes 1 to 7</span><span class="kbd">1 &ndash; 7</span></div>
+        <div class="shortcut-row"><span>Shift-and-Stack Mode</span><span class="kbd">8</span></div>
+        <div class="shortcut-row"><span>Reset Zoom &amp; Pan</span><span class="kbd">R</span></div>
+        <div class="shortcut-row"><span>Zoom In / Out</span><span class="kbd">+ / &minus;</span></div>
+        <div class="shortcut-row"><span>Toggle Reticle Crosshairs</span><span class="kbd">T</span></div>
+        <div class="shortcut-row"><span>Toggle Gaia Star Overlay</span><span class="kbd">G</span></div>
+        <div class="shortcut-row"><span>Toggle WCS Compass</span><span class="kbd">C</span></div>
+        <div class="shortcut-row"><span>Close Modal</span><span class="kbd">Esc</span></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="js/canvas_viewer.js?v=20261115v"></script>
+  <script src="js/spectrum_chart.js?v=20261115v"></script>
+  <script src="js/audit_chart.js?v=20261115v"></script>
+  <script src="js/app.js?v=20261115v"></script>
+</body>
+</html>

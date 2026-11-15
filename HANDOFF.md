@@ -90,7 +90,7 @@ GitHub repo in the service settings to restore auto-deploy. Build takes ~3–4 m
 | `backend/real_pipeline.py`, `backend/science.py` | FITS loading, masking, registration, band balancing, measurements |
 | `backend/targets.py` | Coordinate/name resolution and preset matching |
 | `backend/track1/` | IRSA archive queries, visits, cutouts |
-| `frontend/index.html`, `frontend/js/`, `frontend/css/style.css` | Viewer UI |
+| `frontend/index.html` (landing), `frontend/viewer.html`, `frontend/js/`, `frontend/css/style.css` | Viewer UI |
 | `frontend/assets/` | Mission patch, SPHEREx and Space Apps logos |
 | `tests/` | Python and frontend tests |
 | `docs/` | Validation report, demo video, screenshot, submission text |

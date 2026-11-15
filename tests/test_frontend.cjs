@@ -40,7 +40,7 @@ renderAudit.call({ width: 360, height: 300, data: {}, ctx: {
   clearRect() {}, fillText(text) { labels.push(text); }
 } });
 assert.equal(labels[0], 'Per-star audit unavailable');
-const html = fs.readFileSync(path.join(__dirname, '../frontend/index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '../frontend/viewer.html'), 'utf8');
 for (const id of ['pipeT1', 'pipeT2', 'pipeT3', 'pipeT4']) assert.ok(html.includes(`id="${id}"`), `${id} pipeline card missing`);
 const appSrc = fs.readFileSync(path.join(__dirname, '../frontend/js/app.js'), 'utf8');
 assert.ok(appSrc.includes('updatePipelineStrip') && appSrc.includes('Request returned no frames'), 'pipeline strip must report unavailable stages');
