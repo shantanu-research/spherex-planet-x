@@ -58,3 +58,11 @@ Thumbs.db
 desktop.ini
 
 data/observations/
+
+# Local tooling and scratch (not project files)
+.impeccable/
+DESIGN.md
+PRODUCT.md
+.claude/
+.gemini/
+*.local.*

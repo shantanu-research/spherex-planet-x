@@ -94,6 +94,39 @@
   </section>
 
 
+  <section id="extras" class="band" aria-labelledby="extrasTitle">
+    <div class="band-head">
+      <h2 id="extrasTitle">More than a blink: three things the pipeline adds</h2>
+    </div>
+    <ol class="extras">
+      <li>
+        <h3>A flipbook you can take with you</h3>
+        <div>
+          <p>Any view exports as a GIF, an MP4 or a CSV of its measurements. The animation is built from the frames and their metadata, so each frame is stamped with its target, visit, detector and observation date.</p>
+          <a class="text-link" href="viewer.html?q=WISE%200855-0714">Open a field and use Export</a>
+        </div>
+      </li>
+      <li>
+        <h3>Infrared you can see</h3>
+        <div>
+          <p>SPHEREx observes 0.744 to 5.002 µm, which no eye can see. The viewer renders these bands in visible colour: false colour puts detectors D6, D3 and D1 into red, green and blue for the same visit, and the code includes a logarithmic map of the infrared range onto 380 to 750 nm, drawn below. These are reference colours, not what an eye would see, and the three bands are not simultaneous.</p>
+          <figure class="strip">
+            <div class="strip-wrap"><svg class="strip-bar" viewBox="0 0 100 10" preserveAspectRatio="none" role="img" aria-label="Infrared wavelengths from 0.74 to 5.0 micrometres mapped onto visible colours, violet through blue, green and yellow to red."><defs><linearGradient id="irvis" x1="0" x2="1"><stop offset="0.0%" stop-color="#4C004C"/><stop offset="4.2%" stop-color="#6C0091"/><stop offset="8.3%" stop-color="#6800D6"/><stop offset="12.5%" stop-color="#3A00FF"/><stop offset="16.7%" stop-color="#0009FF"/><stop offset="20.8%" stop-color="#0057FF"/><stop offset="25.0%" stop-color="#00A6FF"/><stop offset="29.2%" stop-color="#00F4FF"/><stop offset="33.3%" stop-color="#00FF55"/><stop offset="37.5%" stop-color="#20FF00"/><stop offset="41.7%" stop-color="#58FF00"/><stop offset="45.8%" stop-color="#90FF00"/><stop offset="50.0%" stop-color="#C8FF00"/><stop offset="54.2%" stop-color="#FFFD00"/><stop offset="58.3%" stop-color="#FFC100"/><stop offset="62.5%" stop-color="#FF8400"/><stop offset="66.7%" stop-color="#FF4800"/><stop offset="70.8%" stop-color="#FF0B00"/><stop offset="75.0%" stop-color="#FF0000"/><stop offset="79.2%" stop-color="#FF0000"/><stop offset="83.3%" stop-color="#FF0000"/><stop offset="87.5%" stop-color="#F20000"/><stop offset="91.7%" stop-color="#BB0000"/><stop offset="95.8%" stop-color="#840000"/><stop offset="100.0%" stop-color="#4C0000"/></linearGradient></defs><rect width="100" height="10" fill="url(#irvis)"/></svg><div class="strip-ticks" aria-hidden="true"><span style="left:15.5%">1 µm</span><span style="left:51.9%">2 µm</span><span style="left:73.2%">3 µm</span><span style="left:88.3%">4 µm</span><span style="left:100.0%">5 µm</span></div></div>
+            <figcaption>Wavelength to colour, as computed by the code (logarithmic scale).</figcaption>
+          </figure>
+          <p class="strip-links"><a class="text-link" href="viewer.html?q=Epsilon%20Indi%20Ba%2FBb&amp;mode=false_colour">Epsilon Indi Ba/Bb in false colour</a> <a class="text-link" href="viewer.html?q=Barnard%27s%20Star&amp;mode=false_colour">Barnard's Star in false colour</a></p>
+        </div>
+      </li>
+      <li>
+        <h3>A fix for colour that looks like motion</h3>
+        <div>
+          <p>Each detector has 17 colour bands, and the target lands in a different one in every shot, so a star can seem to flicker when nothing changed. The Track 2 solution labels every shot with its wavelength band, stacks each visit with equal weight per band, and compares only the bands two visits share. When too few are shared, the comparison is marked unreliable instead of showing a possibly false change.</p>
+          <a class="text-link" href="viewer.html?q=WISE%200855-0714&amp;mode=wavelength_matched&amp;det=D6">See a wavelength-matched view</a>
+        </div>
+      </li>
+    </ol>
+  </section>
+
   <section id="tracks" class="band" aria-labelledby="tracksTitle">
     <div class="band-head">
       <h2 id="tracksTitle">How it was built: four tracks, one pipeline</h2>

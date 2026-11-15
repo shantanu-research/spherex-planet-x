@@ -92,6 +92,20 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
 .tracks .who { margin-top:6px; font:600 16px/1.3 var(--display); color:var(--link); }
 .tracks li p:last-child { margin-top:14px; font-size:16px; color:var(--text); }
 
+/* Extras: title left, text right, divided by hairlines */
+.extras { list-style:none; border-top:1px solid var(--line-strong); }
+.extras > li { display:grid; grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr); gap:16px clamp(24px,5vw,80px); padding:32px 0; border-bottom:1px solid var(--line); }
+.extras h3 { font-size:clamp(22px,2.4vw,30px); line-height:1.2; font-weight:700; letter-spacing:-.01em; }
+.extras p + p, .extras figure, .extras a { margin-top:16px; }
+.text-link { display:inline-block; font:700 16px/1.3 var(--display); color:var(--text-strong); text-decoration-color:var(--accent); text-underline-offset:.3em; text-decoration-thickness:2px; }
+.text-link:hover { color:var(--accent); }
+.strip-links { display:flex; flex-wrap:wrap; gap:8px 28px; }
+.strip-wrap { position:relative; padding-bottom:30px; }
+.strip-bar { display:block; width:100%; height:28px; border:1px solid var(--line-strong); }
+.strip-ticks span { position:absolute; top:34px; transform:translateX(-50%); font-size:14px; color:var(--muted); white-space:nowrap; }
+.strip-ticks span:last-child { transform:translateX(-100%); }
+.strip figcaption { font-size:14px; color:var(--muted); }
+
 /* Test fields: a story list, one scannable row each */
 .fields { list-style:none; border-top:1px solid var(--line-strong); }
 .fields li { border-bottom:1px solid var(--line); }
@@ -146,6 +160,7 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
  .facts dl { grid-template-columns:repeat(2,1fr); }
  .facts dl > div:nth-child(3) { padding-left:0; border-left:0; }
  .facts dl > div:nth-child(n+3) { border-top:1px solid var(--line); }
+ .extras > li { grid-template-columns:1fr; }
  .tracks { grid-template-columns:repeat(2,1fr); }
  .tracks li:nth-child(3) { padding-left:0; border-left:0; }
  .tracks li:nth-child(n+3) { border-top:1px solid var(--line); margin-top:16px; }

@@ -121,6 +121,6 @@ Team Overdrive (NASA Space Apps 2026, Pune local event). Roles follow the team's
 
 [Project description](docs/submission/project.md) · [Demo script](docs/submission/demo-script.md) · [Recorded walkthrough](docs/demo/walkthrough.mp4) · [Validation report](docs/validation.json) · [Input manifest](data/observation-manifest.json)
 
-Data: [NASA SPHEREx / IRSA](https://irsa.ipac.caltech.edu/Missions/spherex.html), [project Drive](https://drive.google.com/drive/folders/1nfJhjfiqrYmYPUiqscdLWCcKW8jsEbXE), [Gaia](https://gea.esac.esa.int/archive/), [CatWISE](https://irsa.ipac.caltech.edu/Missions/catwise.html), [CDS Sesame](https://cds.unistra.fr/cgi-bin/Sesame).
+Data: [NASA SPHEREx / IRSA](https://irsa.ipac.caltech.edu/Missions/spherex.html), [Gaia](https://gea.esac.esa.int/archive/), [CatWISE](https://irsa.ipac.caltech.edu/Missions/catwise.html), [CDS Sesame](https://cds.unistra.fr/cgi-bin/Sesame).
 
 Software: Astropy, NumPy, SciPy, HTTPX, Pillow and FFmpeg. Web accessibility follows [Chrome Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance), including semantic tables, native dialogs/progress and visible keyboard focus. AI assistance was used for implementation, review, tests and documentation. Verify team attribution and competition requirements before submitting.
