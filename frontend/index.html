@@ -6,12 +6,32 @@
   <title>SPHEREx Sky Flipbook</title>
   <meta name="description" content="Team Overdrive's NASA Space Apps Challenge 2026 project: blink real SPHEREx infrared images and tell motion from wavelength.">
   <link rel="icon" type="image/svg+xml" href="assets/mission-patch.svg">
+  <script>try{if(!sessionStorage.getItem("odIntro")&&!matchMedia("(prefers-reduced-motion:reduce)").matches&&!location.search&&!location.hash)document.documentElement.classList.add("intro-on")}catch(e){}</script>
   <link rel="stylesheet" href="css/landing.css?v=20261115a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@500;700;900&family=Overpass:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+<div id="intro" class="intro" aria-hidden="true">
+  <div class="intro-stage">
+    <svg class="intro-logo" viewBox="0 0 460 460" focusable="false">
+      <circle class="i-ring" cx="232" cy="228" r="206" fill="none" stroke="#FF5A00" stroke-width="3"/>
+      <circle class="i-disc" cx="232" cy="228" r="196" fill="#0B2447"/>
+      <g class="i-stripes" fill="#0B2447" stroke="#fff" stroke-width="14" stroke-linejoin="miter">
+        <polygon points="4,318 240,200 276,222 36,356"/>
+        <polygon points="92,398 286,268 306,314 124,428"/>
+      </g>
+      <g class="i-arrow" stroke-linejoin="miter">
+        <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00" stroke="#fff" stroke-width="20" paint-order="stroke"/>
+        <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00"/>
+      </g>
+    </svg>
+    <p class="intro-word"><span>T</span><span>E</span><span>A</span><span>M</span><span class="gap"></span><span>O</span><span>V</span><span>E</span><span>R</span><span>D</span><span>R</span><span>I</span><span>V</span><span>E</span></p>
+    <p class="intro-tag">NASA Space Apps Challenge 2026 &middot; Planet X and SPHEREx</p>
+  </div>
+  <button type="button" class="intro-skip" id="introSkip">Skip intro</button>
+</div>
 <a class="skip-link" href="#main">Skip to main content</a>
 
 <div class="notice" role="note">
@@ -19,18 +39,20 @@
 </div>
 
 <header class="site-header">
+  <nav class="nav-left" aria-label="Page sections">
+    <a href="#idea">The idea</a>
+    <a href="#extras">Beyond the blink</a>
+    <a href="#tracks">How it was built</a>
+  </nav>
   <a class="brand" href="/" aria-label="SPHEREx Sky Flipbook, home">
     <img src="assets/mission-patch.svg" width="48" height="48" alt="">
     <span>SPHEREx Sky Flipbook</span>
   </a>
-  <nav class="site-nav" aria-label="Page sections">
-    <a href="#idea">The idea</a>
-    <a href="#tracks">How it was built</a>
+  <div class="nav-right">
     <a href="#fields">Test fields</a>
     <a href="#team">Team</a>
-    <a href="#limits">Limits</a>
-  </nav>
-  <a class="btn btn-primary btn-small" href="viewer.html">Open the viewer</a>
+    <a class="btn btn-primary btn-small" href="viewer.html">Open the viewer</a>
+  </div>
 </header>
 
 <main id="main">
@@ -58,6 +80,14 @@
     </figure>
   </section>
 
+  <section class="quick" aria-label="Quick links">
+    <ul>
+      <li><span class="mono">The data</span><a href="#fields">Real SPHEREx test fields</a></li>
+      <li><span class="mono">The viewer</span><a href="viewer.html">Open the sky flipbook</a></li>
+      <li><span class="mono">The team</span><a href="#team">Meet Team Overdrive</a></li>
+    </ul>
+  </section>
+
   <section class="facts" aria-label="Project facts">
     <dl>
       <div><dt>Data</dt><dd>42 SPHEREx Level-2 FITS files</dd></div>
@@ -67,7 +97,7 @@
     </dl>
   </section>
 
-  <section id="idea" class="band" aria-labelledby="ideaTitle">
+  <section id="idea" class="band light" aria-labelledby="ideaTitle">
     <div class="band-head">
       <h2 id="ideaTitle">Why a flipbook, and why it needs care</h2>
     </div>
@@ -127,7 +157,7 @@
     </ol>
   </section>
 
-  <section id="tracks" class="band" aria-labelledby="tracksTitle">
+  <section id="tracks" class="band light" aria-labelledby="tracksTitle">
     <div class="band-head">
       <h2 id="tracksTitle">How it was built: four tracks, one pipeline</h2>
       <p>Each stage hands a checked result to the next. The viewer shows what every stage produced for the current view.</p>
@@ -152,7 +182,7 @@
     </ol>
   </section>
 
-  <section id="fields" class="band band-alt" aria-labelledby="fieldsTitle">
+  <section id="fields" class="band" aria-labelledby="fieldsTitle">
     <div class="band-head">
       <h2 id="fieldsTitle">Try a test field</h2>
       <p>Each link opens the viewer on installed SPHEREx data for that target.</p>
@@ -209,7 +239,7 @@
     </ul>
   </section>
 
-  <section id="team" class="band" aria-labelledby="teamTitle">
+  <section id="team" class="band light" aria-labelledby="teamTitle">
     <div class="band-head">
       <h2 id="teamTitle">Team Overdrive</h2>
       <p>Four people, four tracks, built for the NASA Space Apps Challenge 2026 in Pune.</p>
@@ -282,7 +312,7 @@
     </ul>
   </section>
 
-  <section id="limits" class="band band-alt" aria-labelledby="limitsTitle">
+  <section id="limits" class="band" aria-labelledby="limitsTitle">
     <div class="band-head">
       <h2 id="limitsTitle">What this does not claim</h2>
     </div>

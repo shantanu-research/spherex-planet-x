@@ -12,3 +12,20 @@ if ('IntersectionObserver' in window) {
 } else {
   targets.forEach(el => el.classList.add('in'));
 }
+
+// Intro: remove the overlay when it has lifted (or on skip), and remember it for this session.
+(function () {
+  const root = document.documentElement;
+  if (!root.classList.contains('intro-on')) return;
+  const el = document.getElementById('intro');
+  let ended = false;
+  function end() {
+    if (ended) return; ended = true;
+    try { sessionStorage.setItem('odIntro', '1'); } catch (e) {}
+    root.classList.remove('intro-on');
+    if (el) el.remove();
+  }
+  setTimeout(end, 4100);
+  document.getElementById('introSkip').addEventListener('click', end);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') end(); });
+})();

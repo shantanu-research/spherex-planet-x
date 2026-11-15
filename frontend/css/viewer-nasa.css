@@ -1,0 +1,34 @@
+/* Viewer theme after nasa.gov: black ground, white Inter type, DM Mono for data, red for action and selection.
+   Loaded after style.css; only tokens and a few components are overridden. No NASA insignia. */
+:root {
+ --bg-void:#000; --bg-primary:#0B0B0B; --bg-secondary:#111; --bg-tertiary:#1A1A1A; --bg-elevated:#222;
+ --border-subtle:#2B2B2B; --border-medium:#4A4A4A;
+ --text-pure:#fff; --text-secondary:#E8E8E8; --text-muted:#B5B5B5; --text-dim:#A0A0A0;
+ --accent:#FF6B5E; --accent-cyan:#FF6B5E; --link:#fff;
+ --panther-purple:#FF6B5E; --panther-purple-light:#FF6B5E; --panther-purple-bright:#FF6B5E; --panther-purple-subtle:#1F1F1F; --panther-purple-border:#FF6B5E;
+ --font-sans:'Inter','Public Sans','Segoe UI',sans-serif; --font-display:'Inter','Segoe UI',sans-serif; --font-mono:'DM Mono',Consolas,monospace;
+}
+body { background:#000; color:#E8E8E8; }
+::selection { background:#D83933; color:#fff; }
+* { scrollbar-color:#555 #111; }
+.portal-bar { background:#0B3D91 !important; color:#fff !important; }
+.portal-bar * { color:#fff; }
+.hud-header { background:#000 !important; border-bottom:1px solid #222; }
+.mission-title { font-weight:800; letter-spacing:-.02em; }
+.header-patch { border-radius:50%; }
+.panel, .pipe-card, .science-panel-container .panel { background:#0B0B0B; border-color:#2B2B2B; }
+.panel-title, h2 { font-weight:800; letter-spacing:-.01em; }
+.toggle-pill.active, .visit-step-btn.active, .mode-card.active { background:#1F1F1F; border-color:#FF6B5E; color:#fff; }
+.preset-btn.active, .tab-btn.active { border-bottom-color:#D83933; border-color:#D83933; }
+.target-form button[type="submit"] { background:#D83933; color:#fff; border-color:#D83933; font-weight:700; }
+.target-form button[type="submit"]:hover { background:#B92D28; border-color:#B92D28; }
+.help-btn:hover { border-color:#FF6B5E; color:#fff; }
+.portal-links a:hover, .portal-links a:focus-visible, a:hover { color:#fff; border-bottom-color:#D83933; }
+.range-control input[type="range"], button, summary, input { accent-color:#D83933; }
+.metric-label, .pipe-label, .panel-subtitle, .mode-name + * { font-family:'DM Mono',Consolas,monospace; }
+:focus-visible { outline:3px solid #FFC83D; outline-offset:3px; }
+.target-form { background:#0B0B0B !important; border-color:#2B2B2B !important; }
+.target-form input, .hud-pill, .canvas-coord-readout { background:#000 !important; border-color:#4A4A4A; }
+#playPauseBtn, .det-btn.active { background:#fff; color:#000; border-color:#fff; }
+dialog { background:#0B0B0B; border-color:#4A4A4A; color:#E8E8E8; }
+.toast-notification { background:#fff; color:#000; }
