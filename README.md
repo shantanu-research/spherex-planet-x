@@ -10,7 +10,7 @@ A NASA Space Apps project for inspecting SPHEREx infrared observations without c
 
 ![Animated flipbook of real SPHEREx exposures of WISE 0855-0714 (detector D6); flicker is wavelength change, not variability](docs/demo/flipbook-wise0855.gif)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shantanu-research/spherex-planet-x)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shantanu-research/team-overdrive-spherex-planet-x-2026)
 
 ## Run
 

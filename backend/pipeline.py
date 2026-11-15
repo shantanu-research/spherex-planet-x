@@ -118,7 +118,7 @@ def execute_pipeline(
     field_stars = sim_data["field_stars"]
     star_positions = [(s["x"], s["y"]) for s in field_stars]
 
-    # 2. Cleaning & Akhilesh's 5-Step Band-Balanced Stacking
+    # 2. Cleaning & 5-Step Band-Balanced Stacking
     for v in raw_visits:
         for exp in v["exposures"]:
             clean_img, clean_wt, _ = clean_frame_data(

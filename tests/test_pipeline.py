@@ -64,7 +64,7 @@ class TestSpherexPipeline(unittest.TestCase):
         self.assertEqual(visits[2]["visit_id"], "V3")
 
     def test_stage2_band_balanced_stacking(self):
-        """Verify Akhilesh's 5-step hierarchical stacking across 17 LVF channels."""
+        """Verify 5-step hierarchical stacking across 17 LVF channels."""
         sim = generate_simulated_target_visits("WISE 0855-0714", detector="D6", grid_size=32)
         visits = sim["visits"]
         res = perform_band_balanced_stacking(visits, detector="D6")

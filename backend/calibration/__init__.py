@@ -1,5 +1,5 @@
 """
-Data Calibration, Cleaning, Akhilesh's 5-Step Stacking, and Flicker Audit
+Data Calibration, Cleaning, 5-Step Stacking, and Flicker Audit
 """
 
 from .cleaning import clean_frame_data, DEFAULT_MP_FLAGS

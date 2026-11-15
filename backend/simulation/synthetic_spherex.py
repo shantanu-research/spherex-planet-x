@@ -168,7 +168,7 @@ def generate_simulated_target_visits(
         # In a real SPHEREx survey pass, pointings step across spectral channels.
         # Exposures within each visit sample channels 4, 5, 6, 7.
         # Single exposures fluctuate by 20-30% due to LVF color slope;
-        # Akhilesh's Band-Balanced stacking equalizes them across C_shared.
+        # Band-Balanced stacking equalizes them across C_shared.
         exposures = []
         dithers = [
             (0.0, 0.0, 4),

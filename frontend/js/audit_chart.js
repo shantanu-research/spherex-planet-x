@@ -1,6 +1,6 @@
 /**
  * SPHEREx Planet X Challenge - Still-Star Photometric Stability Audit Visualizer
- * Proves mathematically that Akhilesh's band-balanced stacking eliminates the 20-30% LVF color flicker.
+ * Proves mathematically that band-balanced stacking eliminates the 20-30% LVF color flicker.
  */
 
 class AuditChart {

@@ -22,7 +22,7 @@ At observation epoch $t_{\text{obs}}$ with $\Delta t = t_{\text{obs}} - t_0$ (ye
 
 ---
 
-## 2. Akhilesh's 5-Step Band-Balanced LVF Stacking Engine
+## 2. 5-Step Band-Balanced LVF Stacking Engine
 
 ### Step 1: Per-Exposure Spectral Labelling
 For each exposure $i$ on detector $d \in \{D_1 \dots D_6\}$, evaluate the spectral WCS key `'W'` at $(x, y)$ to determine target central wavelength $\lambda_{\text{target}, i}$. Map $\lambda_{\text{target}, i}$ to discrete spectral channel index $b_i \in \{1 \dots 17\}$:

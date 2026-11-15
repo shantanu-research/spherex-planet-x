@@ -1,5 +1,5 @@
 """
-SPHEREx Planet X Challenge - Akhilesh's 5-Step Band-Balanced LVF Stacking Engine
+SPHEREx Planet X Challenge - 5-Step Band-Balanced LVF Stacking Engine
 Eliminates artificial 20-30% brightness flicker caused by stepped Linear Variable Filter (LVF) pointings.
 """
 
@@ -45,7 +45,7 @@ def perform_band_balanced_stacking(
     detector: str
 ) -> Dict[str, Any]:
     """
-    Akhilesh's 5-Step Hierarchical Band-Balanced Stacking:
+    5-Step Hierarchical Band-Balanced Stacking:
     
     1. Per-Exposure Spectral Labelling (channels 1..17)
     2. Two-Level Hierarchical Stacking:
