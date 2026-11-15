@@ -115,7 +115,7 @@ Team Overdrive (NASA Space Apps 2026, Pune local event). Roles follow the team's
 - **Track 1, data pipeline and backend: Malhar Tamhankar.** IRSA archive queries, visit grouping, per-visit frame selection, cutouts and caching, the FastAPI backend; demo-target pre-caching, faster cached search, retry handling for archive 503 errors, same-wavelength time-lapse and the first real SPHEREx light curves.
 - **Track 2, image processing: Akhilesh Rohit Bhosale.** Band-balanced stacking (wavelength labels from the spectral WCS, shared-band checks, alignment before stacking) and the colour-shift solution that keeps wavelength changes from being mistaken for motion.
 - **Track 3, spectra and science validation: Amrita Patil.** On-the-fly aperture spectra, sub-pixel centroid and proper-motion tracking, Gaia DR3 overlays propagated to each epoch, flag masking and saturation guard, and validation of the five test targets.
-- **Track 4, frame stitching, viewer and demo: Shantanu Pawar.** Frame sequencing and viewing modes, the web viewer, GIF/MP4 export, shareable and embeddable URLs, demo and submission.
+- **Track 4, frame stitching, viewer and demo: Shantanu Pawar, team leader.** Frame sequencing and viewing modes, the web viewer, GIF/MP4 export, shareable and embeddable URLs, demo and submission.
 
 ## Submission and sources
 

@@ -206,32 +206,40 @@ main > section > * { max-width:var(--max); margin-inline:auto; }
  .btn svg, .btn { transition:none; }
 }
 
-/* Intro: the Project Flipbook mission patch turns around like a coin and becomes the Team Overdrive logo,
-   then the screen lifts to reveal the page. Runs once per session. */
+/* Intro: the Project Flipbook mission patch turns around and dissolves into the Team Overdrive logo,
+   then a circular iris closes on the logo and opens the page. Runs once per session. */
 .intro{display:none;}
 .intro-on{overflow:hidden;}
-.intro-on .intro{display:grid;place-items:center;position:fixed;inset:0;z-index:1000;background:#000;animation:intro-lift .85s cubic-bezier(.76,0,.24,1) 4.1s forwards;}
-.intro-stage{display:grid;justify-items:center;gap:26px;padding:24px;text-align:center;}
-.coin{position:relative;width:clamp(170px,30vmin,300px);aspect-ratio:1;perspective:1000px;}
-.coin-inner{position:absolute;inset:0;transform-style:preserve-3d;animation:coin-in .8s cubic-bezier(.16,1,.3,1) both,coin-flip 1.5s cubic-bezier(.7,0,.2,1) 1.5s both;}
+.intro-on .intro{display:grid;place-items:center;position:fixed;inset:0;z-index:1000;background:#000;animation:intro-iris 1.15s cubic-bezier(.7,0,.2,1) 4.3s forwards;}
+.intro-stage{display:grid;justify-items:center;gap:28px;padding:24px;text-align:center;}
+.coin{position:relative;width:clamp(170px,30vmin,300px);aspect-ratio:1;perspective:1200px;}
+.coin-inner{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform,filter;
+  animation:coin-in 1s cubic-bezier(.16,1,.3,1) both,coin-turn 1.9s cubic-bezier(.65,0,.35,1) 1.3s both;}
 .coin-face{position:absolute;inset:0;display:grid;place-items:center;}
-.coin-front{animation:face-out .01s linear 2.25s forwards;}
 .coin-face img,.coin-face svg{width:100%;height:100%;display:block;border-radius:50%;}
-.coin-back{transform:rotateY(180deg);opacity:0;animation:face-in .01s linear 2.25s forwards;}
-.coin-ring{position:absolute;inset:-6%;border-radius:50%;border:3px solid #FF5A00;opacity:0;animation:i-ring .9s ease-out 2.9s both;}
+.coin-front{animation:face-out .34s ease-in-out 2.07s forwards;}
+.coin-back{transform:rotateY(180deg);opacity:0;animation:face-in .34s ease-in-out 2.07s forwards;}
+.coin-ring{position:absolute;inset:-5%;border-radius:50%;border:2px solid #FF5A00;opacity:0;animation:i-ring 1.3s cubic-bezier(.16,1,.3,1) 3s both;}
 .intro-words{display:grid;justify-items:center;}
 .intro-word{grid-area:1/1;font:800 clamp(30px,6vw,64px)/1 'Inter','Segoe UI',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#fff;max-width:none;opacity:0;}
-.intro-word.w1{animation:i-word-in .6s cubic-bezier(.16,1,.3,1) .7s both,i-word-out .45s ease 2.35s forwards;}
-.intro-word.w2{animation:i-word-in .7s cubic-bezier(.16,1,.3,1) 2.8s both;}
-.intro-tag{font:400 12px/1.4 'DM Mono',Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#B5B5B5;opacity:0;animation:i-fade .6s ease 3.2s both;max-width:none;}
+.intro-word.w1{animation:word-in .9s cubic-bezier(.16,1,.3,1) .6s both,word-out .7s cubic-bezier(.4,0,.2,1) 2.1s forwards;}
+.intro-word.w2{animation:word-in 1s cubic-bezier(.16,1,.3,1) 2.5s both;}
+.intro-tag{font:400 12px/1.4 'DM Mono',Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;color:#B5B5B5;opacity:0;animation:i-fade .9s ease 3.1s both;max-width:none;}
 .intro-skip{position:absolute;right:clamp(16px,3vw,32px);bottom:clamp(16px,3vw,32px);min-height:44px;padding:10px 18px;background:transparent;color:#fff;border:1px solid #fff;border-radius:4px;font:700 14px/1 'Inter','Segoe UI',sans-serif;cursor:pointer;}
 .intro-skip:hover{background:#D83933;border-color:#D83933;}
+/* the page rises into place as the iris opens */
+.intro-on .hero-copy > *, .intro-on .hero-figure{animation:hero-in 1s cubic-bezier(.16,1,.3,1) 4.75s both;}
+.intro-on .hero-copy > *:nth-child(2){animation-delay:4.85s;} .intro-on .hero-copy > *:nth-child(3){animation-delay:4.95s;} .intro-on .hero-copy > *:nth-child(4){animation-delay:5.05s;}
+.intro-on .hero-figure{animation-delay:5s;}
+@keyframes coin-in{from{opacity:0;transform:scale(.82);filter:blur(8px);}to{opacity:1;transform:none;filter:blur(0);}}
+@keyframes coin-turn{0%{transform:rotateY(0) scale(1);filter:blur(0);}50%{transform:rotateY(90deg) scale(1.1);filter:blur(2.5px);}100%{transform:rotateY(180deg) scale(1);filter:blur(0);}}
 @keyframes face-out{to{opacity:0;}}
 @keyframes face-in{to{opacity:1;}}
-@keyframes coin-in{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:none;}}
-@keyframes coin-flip{0%{transform:rotateY(0) scale(1);}50%{transform:rotateY(90deg) scale(1.12);}100%{transform:rotateY(180deg) scale(1);}}
-@keyframes i-ring{0%{opacity:.9;transform:scale(.94);}100%{opacity:0;transform:scale(1.3);}}
-@keyframes i-word-in{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
-@keyframes i-word-out{to{opacity:0;transform:translateY(-14px);}}
+@keyframes i-ring{0%{opacity:.85;transform:scale(.92);}100%{opacity:0;transform:scale(1.35);}}
+@keyframes word-in{from{opacity:0;transform:translateY(18px);filter:blur(8px);}to{opacity:1;transform:none;filter:blur(0);}}
+@keyframes word-out{to{opacity:0;transform:translateY(-16px);filter:blur(8px);}}
 @keyframes i-fade{to{opacity:1;}}
-@keyframes intro-lift{to{transform:translateY(-100%);}}
+@keyframes intro-iris{from{clip-path:circle(150vmax at 50% 42%);}to{clip-path:circle(0 at 50% 42%);}}
+@keyframes hero-in{from{opacity:0;transform:translateY(26px);}to{opacity:1;transform:none;}}
+.badge{display:inline-block;align-self:flex-start;margin-top:10px;padding:4px 10px;background:#D83933;color:#fff;font:500 11px/1.3 'DM Mono',Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;border-radius:2px;}
+@media (prefers-reduced-motion:reduce){.intro-on .hero-copy > *,.intro-on .hero-figure{animation:none;}}
