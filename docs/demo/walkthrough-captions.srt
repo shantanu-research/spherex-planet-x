@@ -3,13 +3,13 @@
 Shantanu Pawar: This is Project Flipbook. Type any star or coordinates, and it blinks real SPHEREx images to show what moves.
 
 2
-00:00:06,696 --> 00:00:15,047
+00:00:06,696 --> 00:00:15,026
 Malhar Tamhankar: Every frame is a real SPHEREx file from NASA's IRSA archive, with its date and source shown on screen.
 
 3
-00:00:15,047 --> 00:00:22,176
+00:00:15,026 --> 00:00:22,155
 Akhilesh Bhosale: SPHEREx sees different wavelengths across each image. We compare only matching ones, so colour change never looks like motion.
 
 4
-00:00:22,176 --> 00:00:29,331
+00:00:22,155 --> 00:00:29,309
 Amrita Patil: We turn infrared into visible colour and measure each star's spectrum. Then export it all as a GIF or MP4.
