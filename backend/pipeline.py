@@ -5,13 +5,18 @@ Decoupled from HTTP transport to support CLI, batch workflows, and REST APIs.
 Compliant with NASA Space Apps 2026 Master Technical Architecture & Execution Plan.
 """
 
+import functools
 import math
 import io
 from typing import Dict, Any, List, Optional, Tuple
 from backend.orchestration.catalog import get_target_by_query
 from backend.orchestration.resolver import resolve_target, SPHEREx_PIXEL_SCALE_ARCSEC
-from backend.calibration.cleaning import clean_frame_data
-from backend.calibration.band_balancer import perform_band_balanced_stacking
+from backend.calibration.cleaning import clean_frame_data, clean_visit_exposures
+from backend.calibration.band_balancer import (
+    perform_band_balanced_stacking,
+    register_shot,
+    get_channel_wavelength,
+)
 from backend.calibration.flicker_audit import run_still_star_flicker_audit
 from backend.calibration.differencing import (
     compute_difference_frames,
@@ -34,6 +39,80 @@ from backend.rendering.stretching import (
 from backend.rendering.gif_encoder import burn_telemetry_hud, encode_gif_stream
 from backend.simulation.synthetic_spherex import generate_simulated_target_visits
 from backend.data_loader import target_catalog, SPHEREX_BANDS
+
+
+STACK_MANIFEST_FIELDS = (
+    "visit_id", "detector", "bands_used", "n_bands", "n_shots_per_band", "lambda_eff",
+    "lambda_eff_measured", "comparable", "bands_present", "n_bands_present", "n_shots", "n_shots_used",
+    "n_shots_excluded",
+)
+
+
+def build_band_balancing_manifest(stack_res: Dict[str, Any], visits: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Band-balancing hand-off for the spectrophotometry and rendering stages (fields agreed in the band-balancing spec):
+      each stack: detector, bands_used, n_bands, n_shots_per_band, lambda_eff, comparable
+      each single shot: lambda_at_target, band
+    """
+    used = {s["visit_id"]: set(s["bands_used"]) for s in stack_res["visit_stacks"]}
+    shots = []
+    for v in visits:
+        for e in v["exposures"]:
+            shots.append({
+                "exp_id": e.get("exp_id"),
+                "visit_id": v["visit_id"],
+                "mjd": e.get("mjd_mid"),
+                "lambda_at_target": e.get("lambda_at_target"),
+                "band": e.get("band"),
+                "used_in_stack": not e.get("excluded_reason") and e.get("band") in used.get(v["visit_id"], set()),
+                "excluded_reason": e.get("excluded_reason"),
+            })
+    return {
+        "status": stack_res.get("status"),
+        "detector": stack_res.get("detector"),
+        "bands_shared": stack_res.get("shared_channels"),
+        "n_bands_shared": stack_res.get("n_shared_channels"),
+        "min_shared_bands": stack_res.get("min_shared_bands"),
+        "lambda_eff": stack_res.get("effective_wavelength_um"),
+        "comparable": stack_res.get("comparable"),
+        "reliability_warning": stack_res.get("reliability_warning"),
+        "stacks": [{k: s.get(k) for k in STACK_MANIFEST_FIELDS} for s in stack_res["visit_stacks"]],
+        "shots": shots,
+    }
+
+
+def select_matched_band_shots(
+    visits: List[Dict[str, Any]], detector: str, band: int
+) -> List[Optional[Dict[str, Any]]]:
+    """
+    Matched-band mode (PDF Step 4): for the chosen band, the shot from each visit whose
+    lambda_at_target is closest to the band centre, if within +/- half a band width.
+    Returns one shot (or None) per visit.
+    """
+    centre, width = get_channel_wavelength(detector, band)
+    picks: List[Optional[Dict[str, Any]]] = []
+    for v in visits:
+        best, best_d = None, None
+        for e in v["exposures"]:
+            lam = e.get("lambda_at_target", e.get("wavelength_um"))
+            if lam is None:
+                continue
+            d = abs(lam - centre)
+            if d <= width / 2.0 and (best_d is None or d < best_d):
+                best, best_d = e, d
+        picks.append(best)
+    return picks
+
+
+@functools.lru_cache(maxsize=48)
+def _simulated_balanced_stacks(target_key: str, detector: str) -> Tuple[Dict[str, Any], ...]:
+    """
+    Cleaned, aligned, band-balanced visit stacks for one simulated target/detector.
+    The simulation is deterministic, so the result is cached; callers must not modify it.
+    """
+    visits = generate_simulated_target_visits(target_key, detector, 64)["visits"]
+    clean_visit_exposures(visits)
+    return tuple(perform_band_balanced_stacking(visits, detector)["visit_stacks"])
 
 
 def execute_pipeline(
@@ -119,19 +198,34 @@ def execute_pipeline(
     star_positions = [(s["x"], s["y"]) for s in field_stars]
 
     # 2. Cleaning & 5-Step Band-Balanced Stacking
-    for v in raw_visits:
-        for exp in v["exposures"]:
-            clean_img, clean_wt, _ = clean_frame_data(
-                exp["image"], exp["flags"], exp["variance"], exp["zodi"]
-            )
-            exp["cleaned_image"] = clean_img
+    # Every shot is cleaned (flags masked, ZODI + background removed) before stacking
+    cleaning_summary = clean_visit_exposures(raw_visits)
 
     stack_res = perform_band_balanced_stacking(raw_visits, detector=detector)
     balanced_visits = stack_res["visit_stacks"]
+    band_balancing_manifest = build_band_balancing_manifest(stack_res, raw_visits)
 
     # Automated Still-Star Flicker Audit
-    raw_first_frames = [{"image": v["exposures"][0]["image"]} for v in raw_visits]
-    flicker_audit = run_still_star_flicker_audit(raw_first_frames, balanced_visits, star_positions)
+    # Naive series = every single (cleaned) shot in time order; the target is kept out of the tests
+    naive_shots = sorted(
+        (e for v in raw_visits for e in v["exposures"]), key=lambda e: e.get("mjd_mid", 0.0)
+    )
+    # Shots are aligned like the stacks are, so the comparison isolates the colour effect
+    for e in naive_shots:
+        if "registered_cleaned" not in e:  # stacking already aligned most shots; reuse those
+            e["registered_cleaned"] = register_shot(
+                e["cleaned_image"], e.get("variance"),
+                float(e.get("dither_x", 0.0)), float(e.get("dither_y", 0.0)),
+            )
+    naive_frames = [{"image": e["registered_cleaned"][0]} for e in naive_shots]
+    grid_center = len(raw_visits[0]["exposures"][0]["image"]) / 2.0
+    target_positions = [
+        (grid_center + v["target_displacement_px"][0], grid_center + v["target_displacement_px"][1])
+        for v in raw_visits
+    ]
+    flicker_audit = run_still_star_flicker_audit(
+        naive_frames, balanced_visits, star_positions, exclude_positions=target_positions
+    )
 
     # Temporal Median Template & Difference Imaging
     balanced_images = [v["stacked_image"] for v in balanced_visits]
@@ -187,18 +281,26 @@ def execute_pipeline(
             for v in balanced_visits
         ]
     elif effective_mode == "wavelength_matched":
+        # PDF Step 4 matched-band mode: one chosen band, the closest shot to its centre from
+        # each visit, within +/- half a band (surveys 3-4 are shifted by half a band).
+        matched_band = stack_res["shared_channels"][len(stack_res["shared_channels"]) // 2] \
+            if stack_res["shared_channels"] else 9
+        matched = select_matched_band_shots(raw_visits, detector, matched_band)
         matched_frames = []
-        for v_idx in [0, len(raw_visits) - 1]:
-            v = raw_visits[v_idx]
-            matched_exp = v["exposures"][1]  # exposure in channel 5
+        for v, exp in zip(raw_visits, matched):
+            if exp is None:
+                continue  # no shot within tolerance in this visit
+            img = exp["registered_cleaned"][0] if "registered_cleaned" in exp else exp["image"]
             matched_frames.append({
-                "stacked_image": matched_exp["image"],
-                "visit_id": f"{v['visit_id']}-Ch5",
+                "stacked_image": img,
+                "visit_id": f"{v['visit_id']}-B{matched_band}",
                 "date_utc": v["date_utc"],
-                "mjd_mid": matched_exp["mjd_mid"],
+                "mjd_mid": exp["mjd_mid"],
                 "target_pos_px": v["target_pos_px"],
                 "target_displacement_px": v["target_displacement_px"],
-                "wavelength_um": matched_exp["wavelength_um"],
+                "wavelength_um": exp["lambda_at_target"],
+                "shot": {"lambda_at_target": exp["lambda_at_target"], "band": exp["band"],
+                         "matched_band": matched_band},
             })
         active_series = matched_frames
     elif effective_mode == "within_visit_fast":
@@ -213,6 +315,7 @@ def execute_pipeline(
                 "target_pos_px": v0["target_pos_px"],
                 "target_displacement_px": v0["target_displacement_px"],
                 "wavelength_um": exp["wavelength_um"],
+                "shot": {"lambda_at_target": exp.get("lambda_at_target"), "band": exp.get("band")},
             })
         active_series = fast_frames
     else:  # 'visit_blink' default
@@ -231,14 +334,12 @@ def execute_pipeline(
     # Multi-band frames (D1, D3, D6) if multiband mode requested
     d1_stacks, d3_stacks, d6_stacks = None, None, None
     if eff_color_mode == "multiband":
-        d1_sim = generate_simulated_target_visits(target_key, "D1", 64)["visits"]
-        d3_sim = generate_simulated_target_visits(target_key, "D3", 64)["visits"]
-        d6_sim = generate_simulated_target_visits(target_key, "D6", 64)["visits"]
-        d1_stacks = perform_band_balanced_stacking(d1_sim, "D1")["visit_stacks"]
-        d3_stacks = perform_band_balanced_stacking(d3_sim, "D3")["visit_stacks"]
-        d6_stacks = perform_band_balanced_stacking(d6_sim, "D6")["visit_stacks"]
+        d1_stacks = _simulated_balanced_stacks(target_key, "D1")
+        d3_stacks = _simulated_balanced_stacks(target_key, "D3")
+        d6_stacks = _simulated_balanced_stacks(target_key, "D6")
 
     # Render processed frames
+    stacks_by_visit = {s["visit_id"]: s for s in band_balancing_manifest["stacks"]}
     rendered_frames = []
     for idx, item in enumerate(active_series):
         raw_img = item.get("stacked_image") or item.get("difference_image")
@@ -281,6 +382,12 @@ def execute_pipeline(
             "target_displacement_px": disp,
             "rgb_pixels": rgb_frame,
         })
+        # Which stack (or single shot) this frame shows, for the viewer's labels
+        stack_meta = stacks_by_visit.get(item.get("visit_id"))
+        if stack_meta is not None:
+            rendered_frames[-1]["stack"] = stack_meta
+        elif item.get("shot") is not None:
+            rendered_frames[-1]["shot"] = item["shot"]
 
     manifest = {
         "target": target_meta["common_name"],
@@ -294,6 +401,7 @@ def execute_pipeline(
         "pixel_scale_arcsec": SPHEREx_PIXEL_SCALE_ARCSEC,
         "fov_arcmin": fov_arcmin,
         "n_frames": len(rendered_frames),
+        "band_balancing": band_balancing_manifest,
         "stretches": {
             "stretch_type": stretch,
             "vmin": round(vmin, 3),
@@ -313,7 +421,10 @@ def execute_pipeline(
         "coadded_visits": len(rendered_frames),
         "detection_verdict": "BELOW_SINGLE_VISIT_THRESHOLD (Requires Shift-and-Stack Coadd)" if "Planet X" in target_key else "CONFIRMED_POINT_SOURCE",
         "zodiacal_light_subtraction": "Simulated ZODI gradient modeled",
-        "cosmic_ray_filter": "Artifact flags cleaned"
+        "cosmic_ray_filter": (
+            f"{cleaning_summary['n_pixels_masked']} flagged pixels masked across "
+            f"{cleaning_summary['n_exposures_cleaned']} shots before stacking"
+        ),
     }
 
     return {
@@ -389,7 +500,6 @@ def generate_gif_export(
     pil_images[0].save(bio, format="GIF", save_all=True,
                        append_images=pil_images[1:], duration=delay_ms, loop=0)
     return bio.getvalue()
-
 
 
 __all__ = [
