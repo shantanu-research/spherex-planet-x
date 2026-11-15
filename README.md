@@ -1,5 +1,7 @@
 # SPHEREx Sky Flipbook
 
+**Live:** https://spherex-planet-x-i008.onrender.com
+
 A NASA Space Apps project for inspecting SPHEREx infrared observations without confusing wavelength changes with temporal variability. Real FITS data and simulations are separate, explicitly labelled sources.
 
 ![Sky Flipbook showing real SPHEREx D6 data for WISE 0855-0714](docs/screenshot.png)
@@ -94,7 +96,7 @@ The image downloads and verifies project observations during its build and insta
 
 Free-tier note: Render's free plan has limited RAM and sleeps when idle; the first request after sleeping is slow. Open `/api/health` to warm it before a demo.
 
-**Publication status:** the backend is running in the development workspace, not at a verified public production URL. A hosting-account connection is still required. GitHub Pages creation was denied by the current integration (HTTP 403); Pages also cannot run this Python backend. Do not describe the application as publicly deployed until a hosting deployment succeeds.
+**Live demo:** https://spherex-planet-x-i008.onrender.com (Render free plan, Singapore). Verified on 2026-11-15: `/`, `/api/health`, `/api/targets`, `/api/frames` and `/api/export/mp4` return 200. The free plan sleeps when idle, so the first request after a pause is slow; open `/api/health` to warm it. Gaia and CatWISE overlays depend on those archives being reachable from Render and have not been verified there.
 
 ## Who built what
 
