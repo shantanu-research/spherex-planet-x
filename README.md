@@ -106,7 +106,7 @@ The team patch (`frontend/assets/mission-patch.svg`) is an original design: thre
 
 - NASA Space Apps Challenge logo: unaltered, extracted from the official brand guide, shown as "Built for".
 - SPHEREx mission logo: from the Caltech SPHEREx Science Center, used under its image use policy with the credit "Courtesy NASA/JPL-Caltech".
-- The NASA insignia, logotype and seal are not used: they require NASA's written permission, and the Space Apps guide says not to use NASA official branding. The site states that it is an unofficial project with no endorsement implied.
+- The NASA insignia, logotype and seal are not used: they require NASA's written permission, and the Space Apps guide says not to use NASA official branding. The site identifies itself as a NASA Space Apps Challenge 2026 project and states that the website is not operated or endorsed by NASA, JPL, Caltech or IPAC.
 
 ## Who built what
 
