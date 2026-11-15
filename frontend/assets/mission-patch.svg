@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-labelledby="patchTitle patchDesc">
-  <title id="patchTitle">SPHEREx Sky Flipbook mission patch, Team Overdrive</title>
+  <title id="patchTitle">Project Flipbook mission patch, Team Overdrive</title>
   <desc id="patchDesc">Original team patch: a circular embroidered emblem with three offset flipbook frames on a starfield, a star stepping across the frames along a proper-motion arrow, a six-colour band for SPHEREx detectors D1 to D6, and the names of the four team members.</desc>
   <defs>
     <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
@@ -27,7 +27,7 @@
 
   <!-- lettering ring -->
   <text font-family="'Fira Sans', 'Arial Narrow', sans-serif" font-weight="900" font-size="38" letter-spacing="7" fill="#FFFFFF">
-    <textPath href="#arcTop" startOffset="50%" text-anchor="middle">SPHEREX SKY FLIPBOOK</textPath>
+    <textPath href="#arcTop" startOffset="50%" text-anchor="middle">PROJECT FLIPBOOK</textPath>
   </text>
   <text font-family="'Fira Sans', 'Arial Narrow', sans-serif" font-weight="700" font-size="27" letter-spacing="6" fill="#EAFE07">
     <textPath href="#arcBottom" startOffset="50%" text-anchor="middle" dominant-baseline="hanging">TEAM OVERDRIVE · 2026</textPath>

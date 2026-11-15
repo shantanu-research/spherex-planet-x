@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPHEREx Sky Flipbook</title>
+  <title>Project Flipbook</title>
   <meta name="description" content="Team Overdrive's NASA Space Apps Challenge 2026 project: blink real SPHEREx infrared images and tell motion from wavelength.">
   <link rel="icon" type="image/svg+xml" href="assets/mission-patch.svg">
   <script>try{if(!sessionStorage.getItem("odIntro")&&!matchMedia("(prefers-reduced-motion:reduce)").matches&&!location.search&&!location.hash)document.documentElement.classList.add("intro-on")}catch(e){}</script>
@@ -15,19 +15,27 @@
 <body>
 <div id="intro" class="intro" aria-hidden="true">
   <div class="intro-stage">
-    <svg class="intro-logo" viewBox="0 0 460 460" focusable="false">
-      <circle class="i-ring" cx="232" cy="228" r="206" fill="none" stroke="#FF5A00" stroke-width="3"/>
-      <circle class="i-disc" cx="232" cy="228" r="196" fill="#0B2447"/>
-      <g class="i-stripes" fill="#0B2447" stroke="#fff" stroke-width="14" stroke-linejoin="miter">
-        <polygon points="4,318 240,200 276,222 36,356"/>
-        <polygon points="92,398 286,268 306,314 124,428"/>
-      </g>
-      <g class="i-arrow" stroke-linejoin="miter">
-        <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00" stroke="#fff" stroke-width="20" paint-order="stroke"/>
-        <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00"/>
-      </g>
-    </svg>
-    <p class="intro-word"><span>T</span><span>E</span><span>A</span><span>M</span><span class="gap"></span><span>O</span><span>V</span><span>E</span><span>R</span><span>D</span><span>R</span><span>I</span><span>V</span><span>E</span></p>
+    <div class="coin">
+      <div class="coin-inner">
+        <div class="coin-face coin-front"><img src="assets/mission-patch.svg" alt=""></div>
+        <div class="coin-face coin-back">
+          <svg viewBox="0 0 460 460" focusable="false">
+            <circle cx="232" cy="228" r="196" fill="#0B2447"/>
+            <g fill="#0B2447" stroke="#fff" stroke-width="14" stroke-linejoin="miter">
+              <polygon points="4,318 240,200 276,222 36,356"/>
+              <polygon points="92,398 286,268 306,314 124,428"/>
+            </g>
+            <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00" stroke="#fff" stroke-width="20" paint-order="stroke" stroke-linejoin="miter"/>
+            <polygon points="458,60 318,298 286,258 150,386 256,214 54,250 172,150 206,160" fill="#FF5A00"/>
+          </svg>
+        </div>
+      </div>
+      <span class="coin-ring"></span>
+    </div>
+    <div class="intro-words">
+      <p class="intro-word w1">Project Flipbook</p>
+      <p class="intro-word w2">Team Overdrive</p>
+    </div>
     <p class="intro-tag">NASA Space Apps Challenge 2026 &middot; Planet X and SPHEREx</p>
   </div>
   <button type="button" class="intro-skip" id="introSkip">Skip intro</button>
@@ -44,9 +52,9 @@
     <a href="#extras">Beyond the blink</a>
     <a href="#tracks">How it was built</a>
   </nav>
-  <a class="brand" href="/" aria-label="SPHEREx Sky Flipbook, home">
+  <a class="brand" href="/" aria-label="Project Flipbook, home">
     <img src="assets/mission-patch.svg" width="48" height="48" alt="">
-    <span>SPHEREx Sky Flipbook</span>
+    <span>Project Flipbook</span>
   </a>
   <div class="nav-right">
     <a href="#fields">Test fields</a>
@@ -60,7 +68,7 @@
   <section class="hero" aria-labelledby="heroTitle">
     <div class="hero-copy">
       <h1 id="heroTitle">See what really moves in the infrared sky.</h1>
-      <p class="lead">SPHEREx looks through a filter that changes across the detector, so one star can look different in every frame. Sky Flipbook blinks real SPHEREx images and separates true motion from a change of wavelength.</p>
+      <p class="lead">SPHEREx looks through a filter that changes across the detector, so one star can look different in every frame. Project Flipbook blinks real SPHEREx images and separates true motion from a change of wavelength.</p>
       <p class="lead-2">Where a comparison would mislead, it says so and shows nothing instead.</p>
       <div class="actions">
         <a class="btn btn-primary" href="viewer.html">Open the viewer

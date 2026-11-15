@@ -1,12 +1,12 @@
-<img src="frontend/assets/mission-patch.svg" alt="SPHEREx Sky Flipbook mission patch" width="160" align="right">
+<img src="frontend/assets/mission-patch.svg" alt="Project Flipbook mission patch" width="160" align="right">
 
-# SPHEREx Sky Flipbook
+# Project Flipbook
 
 **Live:** https://spherex-planet-x-i008.onrender.com
 
 A NASA Space Apps project for inspecting SPHEREx infrared observations without confusing wavelength changes with temporal variability. Real FITS data and simulations are separate, explicitly labelled sources.
 
-![Sky Flipbook showing real SPHEREx D6 data for WISE 0855-0714](docs/screenshot.png)
+![Project Flipbook showing real SPHEREx D6 data for WISE 0855-0714](docs/screenshot.png)
 
 ![Animated flipbook of real SPHEREx exposures of WISE 0855-0714 (detector D6); flicker is wavelength change, not variability](docs/demo/flipbook-wise0855.gif)
 

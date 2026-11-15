@@ -1,4 +1,4 @@
-# SPHEREx Sky Flipbook
+# Project Flipbook
 
 SPHEREx observes the infrared sky through a spatially varying filter. Blinking images at different wavelengths can make an unchanged source look variable. Sky Flipbook lets users inspect observation dates, wavelength coverage, masks and source files before interpreting apparent motion or changing brightness.
 
