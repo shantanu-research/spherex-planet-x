@@ -25,7 +25,7 @@ if ('IntersectionObserver' in window) {
     root.classList.remove('intro-on');
     if (el) el.remove();
   }
-  setTimeout(end, 5700);
+  setTimeout(end, 7100);
   document.getElementById('introSkip').addEventListener('click', end);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') end(); });
 })();
